@@ -1762,9 +1762,9 @@ function saveCandidate(id) {
     if (el) interviewContent[cat] = el.value.trim();
   });
 
-  // 면접일시 입력 시 대기중 → 면접예정 자동 변경
+  // 면접일시 입력 시 대기중/문자완료 → 면접예정 자동 변경
   let finalStage = stage;
-  if (date && stage === '대기중' && plan.stages.includes('면접예정')) {
+  if (date && (stage === '대기중' || stage === '문자완료') && plan.stages.includes('면접예정')) {
     finalStage = '면접예정';
   }
 
@@ -2172,13 +2172,13 @@ function renderAll() {
   if (activePlan()) switchView(currentView);
 }
 
-// 면접일시 있는데 대기중인 기존 지원자 → 면접예정 일괄 변경
+// 면접일시 있는데 대기중/문자완료인 기존 지원자 → 면접예정 일괄 변경
 (function migrateInterviewStages() {
   let changed = false;
   (db.plans || []).forEach(p => {
     if (!p.stages.includes('면접예정')) return;
     (p.candidates || []).forEach(c => {
-      if (c.interviewDate && c.stage === '대기중') {
+      if (c.interviewDate && (c.stage === '대기중' || c.stage === '문자완료')) {
         c.stage = '면접예정';
         changed = true;
       }
