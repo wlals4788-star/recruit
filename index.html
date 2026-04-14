@@ -430,6 +430,27 @@ tbody tr:hover td { background: rgba(0,122,255,0.03); }
 .badge-orange { background: rgba(255,149,0,0.12);   color: #C93400; }
 .badge-yellow { background: rgba(255,204,0,0.15);   color: #946800; }
 
+/* ===== DEPT / DUTY BADGE ===== */
+.dept-badge, .duty-badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+/* 부서 팔레트 */
+.dept-0 { background:rgba(0,122,255,0.1);   color:#0062CC; }
+.dept-1 { background:rgba(175,82,222,0.1);  color:#8944AB; }
+.dept-2 { background:rgba(52,199,89,0.12);  color:#1E8A3A; }
+.dept-3 { background:rgba(255,149,0,0.12);  color:#B25000; }
+.dept-4 { background:rgba(88,86,214,0.1);   color:#4240B0; }
+.dept-5 { background:rgba(255,59,48,0.1);   color:#C0001A; }
+.dept-6 { background:rgba(50,173,230,0.12); color:#007AAA; }
+.dept-7 { background:rgba(255,204,0,0.15);  color:#806000; }
+/* 담당업무 팔레트 (경기=파랑 계열, 인천=청록 계열, 서울=보라 계열) */
+.duty-gg  { background:rgba(0,122,255,0.08);  color:#0055CC; }   /* 경기 */
+.duty-ic  { background:rgba(50,173,230,0.1);  color:#006A90; }   /* 인천 */
+.duty-sl  { background:rgba(175,82,222,0.1);  color:#7B2FA0; }   /* 서울 */
+.duty-etc { background:rgba(142,142,147,0.1); color:#4A4A4F; }   /* 기타 */
+
 /* ===== STAGE DROPDOWN ===== */
 .stage-badge.clickable { cursor: pointer; user-select: none; }
 .stage-badge.clickable:hover { filter: brightness(0.92); }
@@ -956,6 +977,26 @@ function stageBadge(s, plan) {
   return colors[s] || 'badge-gray';
 }
 
+// 부서 뱃지 HTML
+function deptBadgeHtml(dept) {
+  if (!dept) return '<span style="color:var(--text-tertiary)">-</span>';
+  const plan = activePlan();
+  const depts = plan?.departments || [];
+  const idx = depts.indexOf(dept);
+  const cls = `dept-${idx >= 0 ? idx % 8 : 0}`;
+  return `<span class="dept-badge ${cls}">${esc(dept)}</span>`;
+}
+
+// 담당업무 뱃지 HTML
+function dutyBadgeHtml(duty) {
+  if (!duty) return '<span style="color:var(--text-tertiary)">-</span>';
+  let cls = 'duty-etc';
+  if (duty.startsWith('경기')) cls = 'duty-gg';
+  else if (duty.startsWith('인천')) cls = 'duty-ic';
+  else if (duty.startsWith('서울')) cls = 'duty-sl';
+  return `<span class="duty-badge ${cls}">${esc(duty)}</span>`;
+}
+
 // ─────────────────────────────────────────────
 // RENDER: HEADER
 // ─────────────────────────────────────────────
@@ -1092,8 +1133,8 @@ function renderTable() {
         <strong style="cursor:pointer;color:var(--apple-blue);" onclick="${state.isAdmin ? `openCandidateForm('${c.id}')` : `openViewModal('${c.id}')`}">${esc(c.name)}</strong>
         ${c.phone ? `<span style="margin-left:8px;font-size:12px;color:#94A3B8;">${esc(c.phone)}</span>` : ''}
       </td>
-      <td>${esc(c.department)}</td>
-      <td>${esc(c.jobDuty || '-')}</td>
+      <td>${deptBadgeHtml(c.department)}</td>
+      <td>${dutyBadgeHtml(c.jobDuty)}</td>
       <td>
         <span class="stage-badge ${stageBadge(c.stage)} clickable" onclick="toggleStageDropdown('${c.id}',event)">${esc(c.stage)} ▾</span>
       </td>
