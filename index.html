@@ -1,0 +1,2105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>채용 관리 시스템</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
+  background: #F1F5F9;
+  color: #1E293B;
+  height: 100vh;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.6;
+}
+button { cursor: pointer; border: none; font-family: inherit; }
+input, select, textarea { font-family: inherit; font-size: 14px; }
+
+/* ===== LAYOUT ===== */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+.app-header {
+  background: #fff;
+  border-bottom: 1px solid #E2E8F0;
+  padding: 0 24px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  z-index: 50;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.app-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: #fff;
+  border-right: 1px solid #E2E8F0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sidebar-top {
+  padding: 16px 14px 12px;
+  border-bottom: 1px solid #F1F5F9;
+  flex-shrink: 0;
+}
+.sidebar-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94A3B8;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 10px;
+  padding-left: 4px;
+}
+.sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 8px;
+}
+.plan-item {
+  padding: 11px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.12s;
+  margin-bottom: 4px;
+  position: relative;
+}
+.plan-item:hover { background: #F8FAFC; }
+.plan-item.active { background: #EFF6FF; }
+.plan-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1E293B;
+  margin-bottom: 3px;
+  padding-right: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.plan-item.active .plan-item-name { color: #2563EB; }
+.plan-item-period {
+  font-size: 11px;
+  color: #94A3B8;
+}
+.plan-item-del {
+  position: absolute;
+  top: 10px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #CBD5E1;
+  font-size: 14px;
+  cursor: pointer;
+  display: none;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+.plan-item:hover .plan-item-del { display: flex; }
+.plan-item-del:hover { color: #EF4444; background: #FEE2E2; }
+.sidebar-empty {
+  text-align: center;
+  padding: 40px 16px;
+  color: #CBD5E1;
+  font-size: 13px;
+}
+
+/* ===== MAIN CONTENT ===== */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.plan-header {
+  background: white;
+  border-bottom: 1px solid #E2E8F0;
+  padding: 18px 28px;
+  flex-shrink: 0;
+}
+.plan-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.plan-name-text {
+  font-size: 19px;
+  font-weight: 800;
+  color: #1E293B;
+  letter-spacing: -0.3px;
+}
+.plan-period-text {
+  font-size: 13px;
+  color: #64748B;
+  margin-top: 3px;
+}
+.plan-header-actions { display: flex; gap: 8px; }
+.no-plan-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #94A3B8;
+  padding: 60px 24px;
+  text-align: center;
+}
+.no-plan-icon { font-size: 52px; margin-bottom: 16px; }
+.no-plan-state h3 { font-size: 16px; font-weight: 600; color: #64748B; margin-bottom: 8px; }
+.no-plan-state p  { font-size: 13px; }
+.content-area { padding: 24px 28px; }
+
+/* ===== HEADER LOGO & BUTTONS ===== */
+.header-logo {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 16px; font-weight: 700; color: #2563EB;
+}
+.header-logo .logo-icon { font-size: 20px; }
+.header-actions { display: flex; align-items: center; gap: 8px; }
+.admin-badge {
+  background: #EFF6FF; color: #2563EB;
+  border: 1px solid #BFDBFE;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+}
+
+/* ===== BUTTONS ===== */
+.btn {
+  padding: 7px 14px; border-radius: 8px;
+  font-size: 13px; font-weight: 600;
+  transition: all 0.13s;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.btn-primary   { background: #2563EB; color: white; }
+.btn-primary:hover   { background: #1D4ED8; }
+.btn-secondary { background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; }
+.btn-secondary:hover { background: #E2E8F0; }
+.btn-danger    { background: #FEF2F2; color: #EF4444; border: 1px solid #FECACA; }
+.btn-danger:hover    { background: #FEE2E2; }
+.btn-ghost     { background: transparent; color: #64748B; }
+.btn-ghost:hover     { background: #F1F5F9; }
+.btn-sm  { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
+.btn-full { width: 100%; justify-content: center; }
+
+/* ===== MAIN PANEL ===== */
+/* ===== VIEW TABS ===== */
+.view-tabs {
+  display: flex; gap: 4px;
+  margin-bottom: 16px;
+}
+.view-tab {
+  padding: 7px 18px; border-radius: 8px;
+  font-size: 13px; font-weight: 600;
+  border: 1px solid #E2E8F0;
+  background: white; color: #64748B;
+  cursor: pointer; transition: all .15s;
+}
+.view-tab:hover { background: #F8FAFC; color: #1E293B; }
+.view-tab.active { background: #2563EB; color: white; border-color: #2563EB; }
+
+/* ===== CALENDAR ===== */
+.cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.cal-nav button { background:none; border:1px solid #E2E8F0; border-radius:6px; padding:4px 12px; cursor:pointer; font-size:14px; }
+.cal-nav button:hover { background:#F1F5F9; }
+.cal-title { font-size:16px; font-weight:700; color:#1E293B; }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.cal-dow { text-align:center; font-size:11px; font-weight:700; color:#94A3B8; padding:4px 0; }
+.cal-day {
+  min-height:140px; border-radius:8px; padding:6px;
+  border:1px solid #F1F5F9; background:#FAFAFA;
+  font-size:12px; cursor:default;
+}
+.cal-day.has-event { background:#EFF6FF; border-color:#BFDBFE; cursor:pointer; }
+.cal-day.has-event:hover { background:#DBEAFE; }
+.cal-day.today { border: 2px solid #16A34A; background:#F0FDF4; }
+.cal-day.today:hover { background:#DCFCE7; }
+.cal-day-num { font-size:11px; font-weight:700; color:#64748B; margin-bottom:3px; }
+.cal-day.today .cal-day-num {
+  color:#16A34A; font-size:12px;
+  display:inline-flex; align-items:center; justify-content:center;
+  width:20px; height:20px; border-radius:50%;
+  background:#16A34A; color:#fff;
+}
+.cal-event { font-size:10px; background:#2563EB; color:white; border-radius:4px; padding:1px 5px; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cal-day.empty { background:transparent; border-color:transparent; }
+
+/* ===== STATS ===== */
+.stats-table {
+  width:100%; border-collapse:collapse; font-size:13px;
+  border: 2px solid #475569;
+}
+/* 본문 셀 기본: 점선 구분 */
+.stats-table th, .stats-table td {
+  padding:9px 14px; text-align:center;
+  border: 1px dashed #475569;
+}
+/* tbody 본문만 점선 명시 (헤더/합계 실선 덮어쓰기 방지) */
+.stats-table tbody tr:not(.stats-total) td {
+  border: 1px dashed #475569 !important;
+}
+/* 헤더 행 전체: 굵은 실선 테두리 */
+.stats-table thead th {
+  background:#F8FAFC; font-weight:700; color:#475569;
+  border: 1px solid #475569;
+}
+/* 헤더 행 하단 경계선 강조 */
+.stats-table thead tr:last-child th {
+  border-bottom: 2px solid #475569;
+}
+/* 합계 행: 굵은 실선 테두리 */
+.stats-table tr.stats-total td {
+  border: 1px solid #475569;
+  border-bottom: 2px solid #475569;
+}
+.stats-table tr.stats-total { background:#F0F7FF; font-weight:700; }
+/* 합계 행 상단 강조 */
+.stats-table tbody tr.stats-total td { border-top: 2px solid #475569; }
+/* 본문 첫 번째 열 */
+.stats-table tbody td:first-child { text-align:center; font-weight:600; color:#1E293B; }
+.stats-cell { font-weight:700; color:#2563EB; }
+.stats-cell.zero { color:#CBD5E1; font-weight:400; }
+/* 담당업무 툴팁 */
+.duty-cell { cursor:pointer; position:relative; white-space:nowrap; }
+.duty-cell:hover { color:#2563EB; }
+.duty-cell::after {
+  content: ''; position:absolute; left:50%; bottom:-7px; transform:translateX(-50%);
+  border:5px solid transparent; border-bottom-color:#1E293B;
+  display:none; z-index:100;
+}
+#dutyTooltip {
+  position:fixed; z-index:9999; pointer-events:none;
+  background:#1E293B; color:#F8FAFC;
+  padding:8px 13px; border-radius:10px;
+  font-size:12px; line-height:1.5; max-width:240px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  white-space:pre-wrap; word-break:keep-all;
+  opacity:0; transition:opacity 0.12s;
+}
+#dutyTooltip.visible { opacity:1; }
+#dutyTooltip::after {
+  content:''; position:absolute; top:50%; left:-10px; transform:translateY(-50%);
+  border:6px solid transparent; border-right-color:#1E293B;
+}
+
+.main-panel {
+  background: white; border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  overflow: hidden;
+}
+.panel-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid #F1F5F9;
+  display: flex; align-items: center;
+  justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+}
+.filters { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; align-items: center; }
+.filter-select {
+  padding: 6px 10px; border: 1px solid #E2E8F0;
+  border-radius: 8px; color: #475569;
+  background: #F8FAFC; font-size: 13px; min-width: 120px;
+}
+.filter-select:focus { outline: none; border-color: #2563EB; }
+.search-wrapper { position: relative; }
+.search-icon {
+  position: absolute; left: 9px; top: 50%;
+  transform: translateY(-50%); font-size: 13px;
+  color: #94A3B8; pointer-events: none;
+}
+.search-input {
+  padding: 6px 12px 6px 30px; border: 1px solid #E2E8F0;
+  border-radius: 8px; color: #475569;
+  background: #F8FAFC; font-size: 13px; min-width: 180px;
+}
+.search-input:focus { outline: none; border-color: #2563EB; }
+
+/* ===== TABLE ===== */
+.table-wrapper { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+thead { background: #F8FAFC; }
+th {
+  padding: 10px 14px; text-align: left;
+  font-size: 11px; font-weight: 700; color: #64748B;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  border-bottom: 1px solid #E2E8F0; white-space: nowrap;
+}
+td {
+  padding: 12px 14px; border-bottom: 1px solid #F1F5F9;
+  color: #374151; font-size: 14px;
+}
+tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: #F8FAFC; }
+.td-actions { display: flex; gap: 4px; justify-content: flex-end; white-space: nowrap; }
+.empty-state { text-align: center; padding: 56px 24px; color: #94A3B8; }
+.empty-icon  { font-size: 38px; margin-bottom: 10px; }
+.empty-state p { font-size: 13px; }
+
+/* ===== STAGE BADGE ===== */
+.stage-badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.badge-gray   { background: #F1F5F9; color: #64748B; }
+.badge-blue   { background: #EFF6FF; color: #2563EB; }
+.badge-indigo { background: #EEF2FF; color: #4338CA; }
+.badge-purple { background: #FDF4FF; color: #9333EA; }
+.badge-green  { background: #ECFDF5; color: #059669; }
+.badge-red    { background: #FEF2F2; color: #DC2626; }
+.badge-orange { background: #FFF7ED; color: #EA580C; }
+.badge-yellow { background: #FEFCE8; color: #CA8A04; }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15,23,42,0.45);
+  z-index: 200; display: flex;
+  align-items: center; justify-content: center;
+  padding: 20px; backdrop-filter: blur(3px);
+}
+.modal {
+  background: white; border-radius: 16px;
+  width: 100%; max-width: 560px;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+}
+.modal-lg { max-width: 680px; }
+.modal-sm { max-width: 400px; }
+.modal-header {
+  padding: 18px 22px 14px; border-bottom: 1px solid #F1F5F9;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: white; z-index: 1;
+  border-radius: 16px 16px 0 0;
+}
+.modal-title { font-size: 15px; font-weight: 700; color: #1E293B; }
+.modal-close {
+  background: #F1F5F9; border: none; width: 28px; height: 28px;
+  border-radius: 7px; font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; color: #64748B;
+}
+.modal-close:hover { background: #E2E8F0; }
+.modal-body   { padding: 18px 22px; }
+.modal-footer {
+  padding: 12px 22px 18px; border-top: 1px solid #F1F5F9;
+  display: flex; gap: 8px; justify-content: flex-end;
+}
+
+/* ===== FORM ===== */
+.form-group { margin-bottom: 14px; }
+.form-label {
+  display: block; font-size: 11px; font-weight: 700;
+  color: #475569; margin-bottom: 5px;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.required { color: #EF4444; margin-left: 2px; }
+.form-input, .form-select, .form-textarea {
+  width: 100%; padding: 8px 11px;
+  border: 1px solid #E2E8F0; border-radius: 8px;
+  color: #1E293B; background: white; font-size: 14px;
+  transition: border-color 0.13s, box-shadow 0.13s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none; border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+.form-textarea { resize: vertical; min-height: 76px; }
+.form-input.filled, .form-select.filled, .form-textarea.filled {
+  border: 2px solid #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+}
+.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-section-title {
+  font-size: 11px; font-weight: 700; color: #1E293B;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 14px 0 10px; border-top: 1px solid #F1F5F9;
+  margin-top: 4px;
+}
+
+/* ===== VIEW INFO ===== */
+.info-row {
+  display: flex; padding: 8px 0;
+  border-bottom: 1px solid #F8FAFC;
+  gap: 12px; align-items: flex-start;
+}
+.info-label {
+  font-size: 11px; font-weight: 700; color: #94A3B8;
+  min-width: 78px; padding-top: 2px;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.info-value { font-size: 14px; color: #1E293B; flex: 1; }
+.info-empty { color: #CBD5E1; font-style: italic; }
+.ic-block {
+  border: 1px solid #E2E8F0; border-radius: 10px;
+  overflow: hidden; margin-bottom: 9px;
+}
+.ic-block-label {
+  background: #F8FAFC; padding: 7px 13px;
+  font-size: 11px; font-weight: 700; color: #64748B;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  border-bottom: 1px solid #E2E8F0;
+}
+.ic-block-value {
+  padding: 11px 13px; font-size: 14px; color: #374151;
+  white-space: pre-wrap; line-height: 1.7; min-height: 40px;
+}
+
+/* ===== SETTINGS ===== */
+.settings-section { margin-bottom: 22px; }
+.settings-section-title {
+  font-size: 12px; font-weight: 700; color: #1E293B;
+  margin-bottom: 11px; padding-bottom: 8px;
+  border-bottom: 2px solid #EFF6FF;
+  display: flex; align-items: center; gap: 6px;
+}
+.no-tags { color: #CBD5E1; font-size: 13px; padding: 4px 0; }
+
+/* 설정 리스트 */
+.settings-list { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+.settings-list-item {
+  display: flex; align-items: center;
+  padding: 9px 14px; border-radius: 10px;
+  background: #fff;
+  border: 1px solid #E8EFF6;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  font-size: 13px; color: #1E293B;
+  cursor: pointer; transition: all 0.13s;
+}
+.settings-list-item:hover {
+  background: #EFF6FF; border-color: #93C5FD;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.1);
+  transform: translateY(-1px);
+}
+.settings-item-title {
+  width: 25%; flex-shrink: 0;
+  font-weight: 600; color: #1E293B;
+  padding-right: 14px; margin-right: 14px;
+  border-right: 2px solid #EFF6FF;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.settings-list-item:hover .settings-item-title { border-right-color: #BFDBFE; }
+.settings-item-desc {
+  flex: 1; font-size: 12px; color: #94A3B8;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.settings-item-desc:empty::before { content: '클릭하여 상세내용 입력'; color: #CBD5E1; }
+.settings-item-del {
+  background: none; border: none; cursor: pointer;
+  color: #D1D5DB; font-size: 14px; padding: 3px 7px;
+  border-radius: 5px; margin-left: 6px; flex-shrink: 0;
+  transition: all 0.1s;
+}
+.settings-item-del:hover { color: #EF4444; background: #FEE2E2; }
+
+/* 인라인 추가/수정 행 */
+.settings-add-row {
+  display: flex; gap: 6px; align-items: center;
+  padding: 7px 10px; border-radius: 10px;
+  background: #F0F9FF; border: 1.5px dashed #7DD3FC;
+  margin-bottom: 4px;
+}
+.settings-add-row input {
+  padding: 6px 10px;
+  border: 1px solid #BAE6FD; border-radius: 7px;
+  font-size: 13px; background: white; outline: none;
+  transition: border-color 0.12s;
+}
+.settings-add-row input:focus { border-color: #2563EB; box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
+.settings-add-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 6px;
+  border: 1px solid #BFDBFE; background: #EFF6FF;
+  font-size: 11px; font-weight: 600; color: #2563EB; cursor: pointer;
+  margin-left: auto; white-space: nowrap;
+}
+.settings-add-btn:hover { background: #DBEAFE; border-color: #93C5FD; }
+.settings-add-row input.title-input { width: 25%; flex: none; }
+.settings-add-row input.desc-input  { flex: 1; }
+
+@media (max-width: 768px) {
+  .sidebar { width: 220px; }
+  .content-area { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<div id="dutyTooltip"></div>
+
+<div class="app">
+
+  <!-- 상단 헤더 -->
+  <header class="app-header">
+    <div class="header-logo">
+      <span class="logo-icon">📋</span>
+      채용 관리 시스템
+    </div>
+    <div class="header-actions" id="headerActions"></div>
+  </header>
+
+  <div class="app-body">
+
+    <!-- 좌측 사이드바 -->
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="sidebar-title">채용 계획</div>
+        <div id="newPlanBtnArea"></div>
+      </div>
+      <div class="sidebar-list" id="sidebarList"></div>
+    </aside>
+
+    <!-- 우측 메인 -->
+    <div class="main" id="main">
+      <!-- 채용계획 선택 전 -->
+      <div class="no-plan-state" id="noPlanState">
+        <div class="no-plan-icon">📂</div>
+        <h3>채용 계획을 선택하세요</h3>
+        <p id="noPlanMsg">좌측에서 채용 계획을 선택하세요.</p>
+      </div>
+      <!-- 채용계획 선택 후 -->
+      <div id="planContent" style="display:none; flex-direction:column; flex:1;">
+        <div class="plan-header">
+          <div class="plan-header-row">
+            <div>
+              <div class="plan-name-text"   id="planNameText"></div>
+              <div class="plan-period-text" id="planPeriodText"></div>
+            </div>
+            <div class="plan-header-actions" id="planHeaderActions"></div>
+          </div>
+        </div>
+        <div class="content-area">
+          <!-- 탭 -->
+          <div class="view-tabs">
+            <button class="view-tab active" onclick="switchView('list')">📋 지원자리스트</button>
+            <button class="view-tab" onclick="switchView('calendar')">📅 면접일정</button>
+            <button class="view-tab" onclick="switchView('stats')">📊 통계</button>
+          </div>
+
+          <!-- 지원자리스트 뷰 -->
+          <div id="view-list">
+            <div class="main-panel">
+              <div class="panel-header">
+                <div class="filters">
+                  <select class="filter-select" id="filterDept"  onchange="applyFilter()"><option value="">전체 부서</option></select>
+                  <select class="filter-select" id="filterStage" onchange="applyFilter()"><option value="">전체 단계</option></select>
+                  <div class="search-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input class="search-input" id="searchInput" placeholder="이름 검색..." oninput="applyFilter()">
+                  </div>
+                </div>
+                <div id="addCandidateArea"></div>
+              </div>
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>이름</th>
+                      <th>지원 부서</th>
+                      <th>담당업무</th>
+                      <th>면접 단계</th>
+                      <th>면접일시</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="tableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 면접일정 뷰 -->
+          <div id="view-calendar" style="display:none;">
+            <div class="main-panel" style="padding:20px;">
+              <div class="cal-nav">
+                <button onclick="calMove(-1)">&#8249;</button>
+                <span class="cal-title" id="calTitle"></span>
+                <button onclick="calMove(1)">&#8250;</button>
+              </div>
+              <div class="cal-grid" id="calGrid"></div>
+            </div>
+          </div>
+
+          <!-- 통계 뷰 -->
+          <div id="view-stats" style="display:none;">
+            <div class="main-panel" style="padding:20px;">
+              <div id="statsContent"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<input type="file" id="pdfFileInput" accept=".pdf" multiple style="display:none" onchange="handlePdfFiles(this.files)">
+<div id="modalRoot"></div>
+
+<script>
+// ─────────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────────
+const STORAGE_KEY = 'recruitApp_v2';
+
+const STAGE_PALETTE = ['badge-blue','badge-indigo','badge-purple','badge-green','badge-red','badge-orange','badge-yellow','badge-gray'];
+
+// 특정 단계명에 고정 색상 지정
+const STAGE_FIXED_COLORS = {
+  '대기중':       'badge-gray',
+  '문자완료':     'badge-yellow',
+  '면접예정':     'badge-purple',
+  '면접의사없음': 'badge-red',
+  '불합격':       'badge-red',
+  '노쇼':         'badge-red',
+  '채용후보':     'badge-green',
+  '채용완료':     'badge-indigo',
+};
+
+function assignStageColor(plan, stageName) {
+  if (STAGE_FIXED_COLORS[stageName]) {
+    plan.stageColors[stageName] = STAGE_FIXED_COLORS[stageName]; return;
+  }
+  if (plan.stageColors[stageName]) return;
+  const used = Object.values(plan.stageColors).filter(c => !Object.values(STAGE_FIXED_COLORS).includes(c));
+  const next = STAGE_PALETTE.filter(c => !Object.values(STAGE_FIXED_COLORS).includes(c)).find(c => !used.includes(c))
+            || STAGE_PALETTE[used.length % STAGE_PALETTE.length];
+  plan.stageColors[stageName] = next;
+}
+
+function newPlan(name, startDate, endDate) {
+  const defaultStages = ['서류 검토', '1차 면접', '2차 면접', '최종 면접', '합격', '불합격'];
+  const stageColors = {};
+  defaultStages.forEach((s, i) => { stageColors[s] = STAGE_PALETTE[i % STAGE_PALETTE.length]; });
+  return {
+    id: uid(),
+    name,
+    startDate,
+    endDate,
+    candidates: [],
+    departments: ['개발팀', '마케팅팀', '영업팀', '인사팀'],
+    jobDuties: [],
+    applySites: [],
+    stages: defaultStages,
+    stageColors,
+    interviewCategories: ['직무 적합성', '인성 평가', '커뮤니케이션'],
+    departmentDescs: {},
+    jobDutyDescs: {},
+    applySiteDescs: {},
+    stageDescs: {},
+    interviewCategoryDescs: {}
+  };
+}
+
+function defaultDb() {
+  return { plans: [], adminPassword: '1234' };
+}
+
+function loadDb(inject) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const data = inject || (raw ? JSON.parse(raw) : defaultDb());
+    (data.plans || []).forEach(p => {
+      // 오타 '면졉예정' → '면접예정' 교정
+      p.stages = (p.stages || []).map(s => s === '면졉예정' ? '면접예정' : s);
+      if (p.stageColors && p.stageColors['면졉예정']) {
+        p.stageColors['면접예정'] = p.stageColors['면졉예정'];
+        delete p.stageColors['면졉예정'];
+      }
+      (p.candidates || []).forEach(c => { if (c.stage === '면졉예정') c.stage = '면접예정'; });
+      // 기존 계획에 stageColors 없으면 자동 생성
+      if (!p.stageColors) {
+        p.stageColors = {};
+        (p.stages || []).forEach((s, i) => { p.stageColors[s] = STAGE_PALETTE[i % STAGE_PALETTE.length]; });
+      }
+      // 고정 색상 강제 적용 (노쇼 → 빨간색 등)
+      Object.entries(STAGE_FIXED_COLORS).forEach(([stage, color]) => {
+        if ((p.stages || []).includes(stage)) p.stageColors[stage] = color;
+      });
+      // 단계 순서 재배열: 면접예정 오른쪽에 면접의사없음 → 노쇼 순으로 위치
+      (() => {
+        const stages = p.stages || [];
+        const targets = ['면접의사없음', '노쇼'];
+        const anchorIdx = stages.indexOf('면접예정');
+        if (anchorIdx === -1) return;
+        targets.forEach(t => {
+          const idx = stages.indexOf(t);
+          if (idx === -1) return;
+          stages.splice(idx, 1); // 현재 위치에서 제거
+        });
+        // 앵커 위치 다시 찾아서 그 뒤에 삽입
+        const newAnchor = stages.indexOf('면접예정');
+        stages.splice(newAnchor + 1, 0, ...targets);
+      })();
+      // 기존 계획에 desc 맵 없으면 초기화
+      if (!p.departmentDescs)        p.departmentDescs        = {};
+      if (!p.jobDutyDescs)           p.jobDutyDescs           = {};
+      if (!p.applySiteDescs)         p.applySiteDescs         = {};
+      if (!p.stageDescs)             p.stageDescs             = {};
+      if (!p.interviewCategoryDescs) p.interviewCategoryDescs = {};
+    });
+    return data;
+  } catch(e) { return defaultDb(); }
+}
+
+// ─────────────────────────────────────────────
+// SUPABASE 설정
+// ─────────────────────────────────────────────
+const SB_URL = 'https://tanizzxayjzorplklmax.supabase.co';
+const SB_KEY = 'sb_publishable_cW2zLCb2hvBG3q4xj9W6ew_JYqxATLd';
+const SB_HEADERS = {
+  'Content-Type': 'application/json',
+  'apikey': SB_KEY,
+  'Authorization': 'Bearer ' + SB_KEY,
+  'Prefer': 'resolution=merge-duplicates'
+};
+
+async function sbRead() {
+  const res = await fetch(`${SB_URL}/rest/v1/store?id=eq.1&select=data`, { headers: SB_HEADERS });
+  if (!res.ok) return null;
+  const rows = await res.json();
+  return (rows && rows.length > 0) ? rows[0].data : null;
+}
+
+async function sbWrite(data) {
+  await fetch(`${SB_URL}/rest/v1/store`, {
+    method: 'POST',
+    headers: SB_HEADERS,
+    body: JSON.stringify([{ id: 1, data }])
+  });
+}
+
+function saveDb() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+  sbWrite(db).catch(() => {});
+}
+
+// ─────────────────────────────────────────────
+// API KEY
+// ─────────────────────────────────────────────
+const API_KEY_STORAGE = 'recruitApiKey';
+function getApiKey()       { return localStorage.getItem(API_KEY_STORAGE) || ''; }
+function saveApiKey(key)   { localStorage.setItem(API_KEY_STORAGE, key); }
+
+let db = loadDb(); // localStorage 우선 로드 (동기)
+localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); // 마이그레이션 결과 즉시 저장
+
+const STATE_KEY = 'recruitState_v1';
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(STATE_KEY)) || {}; } catch(e) { return {}; }
+}
+function saveState() {
+  localStorage.setItem(STATE_KEY, JSON.stringify({ activePlanId: state.activePlanId, currentView, isAdmin: state.isAdmin }));
+}
+const _saved = loadState();
+let state = { isAdmin: _saved.isAdmin || false, activePlanId: _saved.activePlanId || null, filter: { dept: '', stage: '', search: '' } };
+
+// Supabase 데이터와 동기화
+async function syncWithServer() {
+  try {
+    const serverData = await sbRead();
+    if (serverData && (serverData.plans || []).length > 0) {
+      db = loadDb(serverData);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    } else {
+      const localData = loadDb();
+      if ((localData.plans || []).length > 0) {
+        await sbWrite(localData);
+        db = localData;
+      }
+    }
+    renderAll();
+  } catch(e) {
+    // 네트워크 없으면 로컬 모드로 동작
+  }
+}
+
+function activePlan() { return db.plans.find(p => p.id === state.activePlanId) || null; }
+
+// ─────────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────────
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtDate(d) { return d ? d.replace(/-/g,'.') : '-'; }
+function fmtDateTime(d, t) {
+  if (!d) return '-';
+  return fmtDate(d) + (t ? ' ' + t + '시' : '');
+}
+function fmtPeriod(p) {
+  if (!p.startDate && !p.endDate) return '기간 미설정';
+  if (p.startDate && p.endDate) return `${fmtDate(p.startDate)} ~ ${fmtDate(p.endDate)}`;
+  if (p.startDate) return `${fmtDate(p.startDate)} ~`;
+  return `~ ${fmtDate(p.endDate)}`;
+}
+
+function stageBadge(s, plan) {
+  const colors = plan?.stageColors || activePlan()?.stageColors || {};
+  return colors[s] || 'badge-gray';
+}
+
+// ─────────────────────────────────────────────
+// RENDER: HEADER
+// ─────────────────────────────────────────────
+function renderHeader() {
+  const el = document.getElementById('headerActions');
+  if (state.isAdmin) {
+    el.innerHTML = `
+      <span class="admin-badge">🔐 관리자 모드</span>
+      <button class="btn btn-ghost" onclick="doLogout()">로그아웃</button>`;
+  } else {
+    el.innerHTML = `<button class="btn btn-secondary btn-sm" onclick="openLogin()">🔐 관리자 로그인</button>`;
+  }
+  // 미선택 안내 문구
+  const msg = document.getElementById('noPlanMsg');
+  if (msg) msg.textContent = '좌측에서 채용 계획을 선택하세요.';
+}
+
+// ─────────────────────────────────────────────
+// RENDER: SIDEBAR
+// ─────────────────────────────────────────────
+function renderSidebar() {
+  // 새 계획 버튼
+  document.getElementById('newPlanBtnArea').innerHTML = state.isAdmin
+    ? `<button class="btn btn-primary btn-full btn-sm" onclick="openPlanForm(null)">＋ 새 채용계획</button>`
+    : '';
+
+  // 플랜 목록
+  const listEl = document.getElementById('sidebarList');
+  if (!db.plans.length) {
+    listEl.innerHTML = `<div class="sidebar-empty">채용 계획이 없습니다.<br>${state.isAdmin ? '새 계획을 만들어보세요.' : '관리자에게 문의하세요.'}</div>`;
+    return;
+  }
+
+  listEl.innerHTML = db.plans.map(p => `
+    <div class="plan-item ${p.id === state.activePlanId ? 'active' : ''}" onclick="selectPlan('${p.id}')">
+      <div class="plan-item-name">${esc(p.name)}</div>
+      <div class="plan-item-period">${fmtPeriod(p)}</div>
+      ${state.isAdmin ? `<button class="plan-item-del" onclick="deletePlan(event,'${p.id}')" title="삭제">✕</button>` : ''}
+    </div>`).join('');
+}
+
+// ─────────────────────────────────────────────
+// PLAN SELECTION
+// ─────────────────────────────────────────────
+function selectPlan(id) {
+  state.activePlanId = id;
+  state.filter = { dept: '', stage: '', search: '' };
+  saveState();
+  renderAll();
+}
+
+// ─────────────────────────────────────────────
+// RENDER: PLAN CONTENT
+// ─────────────────────────────────────────────
+function renderPlanContent() {
+  const noState   = document.getElementById('noPlanState');
+  const content   = document.getElementById('planContent');
+  const plan      = activePlan();
+
+  if (!plan) {
+    noState.style.display = 'flex';
+    content.style.display = 'none';
+    return;
+  }
+  noState.style.display = 'none';
+  content.style.display = 'flex';
+
+  // 플랜 헤더
+  document.getElementById('planNameText').textContent   = plan.name;
+  document.getElementById('planPeriodText').textContent = fmtPeriod(plan);
+  document.getElementById('planHeaderActions').innerHTML = state.isAdmin
+    ? `<button class="btn btn-secondary btn-sm" onclick="openPlanForm('${plan.id}')">✏️ 계획 수정</button>
+       <button class="btn btn-secondary btn-sm" onclick="openSettings()">⚙ 설정</button>`
+    : `<button class="btn btn-secondary btn-sm" onclick="openSettings()">📋 설정 보기</button>`;
+
+  renderFilters();
+  renderTable();
+}
+
+// ─────────────────────────────────────────────
+// RENDER: FILTERS
+// ─────────────────────────────────────────────
+function renderFilters() {
+  const plan = activePlan(); if (!plan) return;
+  const dSel = document.getElementById('filterDept');
+  const sSel = document.getElementById('filterStage');
+  const prevD = dSel.value, prevS = sSel.value;
+
+  dSel.innerHTML = '<option value="">전체 부서</option>' +
+    plan.departments.map(d => `<option value="${esc(d)}" ${prevD===d?'selected':''}>${esc(d)}</option>`).join('');
+  sSel.innerHTML = '<option value="">전체 단계</option>' +
+    plan.stages.map(s => `<option value="${esc(s)}" ${prevS===s?'selected':''}>${esc(s)}</option>`).join('');
+
+  document.getElementById('addCandidateArea').innerHTML = state.isAdmin
+    ? `<button class="btn btn-secondary btn-sm" onclick="triggerPdfImport()">📄 이력서 가져오기</button>
+       <button class="btn btn-primary btn-sm"   onclick="openCandidateForm(null)">＋ 지원자 추가</button>` : '';
+}
+
+// ─────────────────────────────────────────────
+// RENDER: TABLE
+// ─────────────────────────────────────────────
+function filteredCandidates() {
+  const plan = activePlan(); if (!plan) return [];
+  const { dept, stage, search } = state.filter;
+  return plan.candidates.filter(c => {
+    if (dept   && c.department !== dept)    return false;
+    if (stage  && c.stage !== stage)         return false;
+    if (search) {
+      const nameMatch  = c.name.includes(search);
+      const phoneMatch = search.length >= 3 && (c.phone || '').replace(/-/g,'').includes(search.replace(/-/g,''));
+      if (!nameMatch && !phoneMatch) return false;
+    }
+    return true;
+  });
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  const list  = filteredCandidates();
+  if (!list.length) {
+    tbody.innerHTML = `
+      <tr><td colspan="7">
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <p>등록된 지원자가 없습니다.</p>
+        </div>
+      </td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(c => `
+    <tr>
+      <td><strong>${esc(c.name)}</strong>${c.phone ? `<span style="margin-left:8px;font-size:12px;color:#64748B;">${esc(c.phone)}</span>` : ''}</td>
+      <td>${esc(c.department)}</td>
+      <td>${esc(c.jobDuty || '-')}</td>
+      <td><span class="stage-badge ${stageBadge(c.stage)}">${esc(c.stage)}</span></td>
+      <td>${fmtDateTime(c.interviewDate, c.interviewTime)}</td>
+      <td>
+        <div class="td-actions">
+          <button class="btn btn-secondary btn-sm" onclick="${state.isAdmin ? `openCandidateForm('${c.id}')` : `openViewModal('${c.id}')`}">보기</button>
+          ${state.isAdmin ? `
+            <button class="btn btn-danger  btn-sm" onclick="confirmDelete('${c.id}')">삭제</button>` : ''}
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+// ─────────────────────────────────────────────
+// VIEW TABS
+// ─────────────────────────────────────────────
+let currentView = _saved.currentView || 'list';
+let calYear, calMonth;
+
+function switchView(v) {
+  currentView = v;
+  saveState();
+  ['list','calendar','stats'].forEach(name => {
+    document.getElementById('view-' + name).style.display = name === v ? 'block' : 'none';
+  });
+  document.querySelectorAll('.view-tab').forEach((btn, i) => {
+    btn.classList.toggle('active', ['list','calendar','stats'][i] === v);
+  });
+  if (v === 'calendar') renderCalendar();
+  if (v === 'stats')    renderStats();
+}
+
+// ─────────────────────────────────────────────
+// CALENDAR
+// ─────────────────────────────────────────────
+function renderCalendar() {
+  const plan = activePlan(); if (!plan) return;
+  const now = new Date();
+  if (calYear === undefined) { calYear = now.getFullYear(); calMonth = now.getMonth(); }
+
+  document.getElementById('calTitle').textContent = calYear + '년 ' + (calMonth + 1) + '월';
+
+  // 면접일 → 지원자 매핑
+  const dayMap = {};
+  plan.candidates.forEach(c => {
+    if (!c.interviewDate) return;
+    const key = c.interviewDate; // YYYY-MM-DD
+    if (!dayMap[key]) dayMap[key] = [];
+    dayMap[key].push(c);
+  });
+
+  const DONE_STAGES = ['채용후보','불합격','채용완료','노쇼'];
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const lastDate = new Date(calYear, calMonth + 1, 0).getDate();
+  const todayStr = now.toISOString().slice(0,10);
+
+  const dows = ['일','월','화','수','목','금','토'];
+  let html = dows.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+  // 빈 칸
+  for (let i = 0; i < firstDay; i++) html += `<div class="cal-day empty"></div>`;
+
+  for (let d = 1; d <= lastDate; d++) {
+    const dateStr = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    const events = dayMap[dateStr] || [];
+    const isToday = dateStr === todayStr;
+    const allDone = events.length > 0 && events.every(c => DONE_STAGES.some(ds => c.stage.includes(ds)));
+    let eventStyle = '';
+    if (events.length) {
+      eventStyle = allDone
+        ? 'background:#EFF6FF;border-color:#BFDBFE;'       // 파랑 - 완료
+        : 'background:#FEFCE8;border-color:#FDE047;';       // 노랑 - 예정
+    }
+    const cls = ['cal-day', isToday ? 'today' : ''].filter(Boolean).join(' ');
+    const evColor = allDone ? '#2563EB' : '#CA8A04';
+    const evBg    = allDone ? '#2563EB' : '#EAB308';
+    const evHtml = events.slice(0,5).map(c => {
+      const parts = [esc(c.name)];
+      if (c.jobDuty) parts.push(esc(c.jobDuty));
+      if (c.interviewTime) parts.push(c.interviewTime + '시');
+      const bg = c.stage === '노쇼' ? '#DC2626'
+               : c.stage === '채용후보' ? '#059669'
+               : evBg;
+      return `<div class="cal-event" style="background:${bg};">${parts.join(' / ')}</div>`;
+    }).join('') + (events.length > 5 ? `<div style="font-size:10px;color:${evColor};">+${events.length-5}명</div>` : '');
+    const onclick = events.length ? `onclick="calDayClick('${dateStr}')"` : '';
+    const cursor  = events.length ? 'cursor:pointer;' : '';
+    html += `<div class="${cls}" style="${eventStyle}${cursor}" ${onclick}><div class="cal-day-num">${d}</div>${evHtml}</div>`;
+  }
+
+  document.getElementById('calGrid').innerHTML = html;
+}
+
+function calMove(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0)  { calMonth = 11; calYear--; }
+  renderCalendar();
+}
+
+function calDayClick(dateStr) {
+  const plan = activePlan(); if (!plan) return;
+  const list = plan.candidates.filter(c => c.interviewDate === dateStr);
+  if (!list.length) return;
+  const rows = list.map(c => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #F1F5F9;">
+      <div>
+        <strong>${esc(c.name)}</strong>
+        <span style="margin-left:8px;font-size:12px;color:#64748B;">${esc(c.jobDuty||'-')}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        ${c.interviewTime ? `<span style="font-size:13px;color:#2563EB;font-weight:600;">${c.interviewTime}시</span>` : ''}
+        <span class="stage-badge ${stageBadge(c.stage, plan)}">${esc(c.stage)}</span>
+      </div>
+    </div>`).join('');
+  showModal(`
+    <div class="modal-overlay" onclick="bgClose(event)">
+      <div class="modal modal-sm">
+        <div class="modal-header">
+          <span class="modal-title">📅 ${dateStr.replace(/-/g,'.')} 면접</span>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">${rows}</div>
+        <div class="modal-footer"><button class="btn btn-primary" onclick="closeModal()">닫기</button></div>
+      </div>
+    </div>`);
+}
+
+// ─────────────────────────────────────────────
+// STATS
+// ─────────────────────────────────────────────
+function renderStats() {
+  const plan = activePlan(); if (!plan) return;
+  const el = document.getElementById('statsContent'); if (!el) return;
+
+  // 설정에 등록된 담당업무 전체 + 후보에만 있는 것 합산
+  const dutySet = new Set([...plan.jobDuties, ...plan.candidates.map(c => c.jobDuty || '미지정')]);
+  if (!plan.jobDuties.length && !plan.candidates.length) dutySet.add('미지정');
+  const duties = [...dutySet];
+  const stages = plan.stages;
+
+
+  if (!duties.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><p>등록된 담당업무가 없습니다.</p></div>';
+    return;
+  }
+
+  // 집계
+  const matrix = {};
+  duties.forEach(d => {
+    matrix[d] = {};
+    stages.forEach(s => matrix[d][s] = 0);
+  });
+  plan.candidates.forEach(c => {
+    const d = c.jobDuty || '미지정';
+    const s = c.stage;
+    if (!matrix[d]) { matrix[d] = {}; stages.forEach(st => matrix[d][st] = 0); }
+    if (s in matrix[d]) matrix[d][s]++;
+  });
+
+  const stageTotal = {};
+  stages.forEach(s => { stageTotal[s] = duties.reduce((sum, d) => sum + (matrix[d][s]||0), 0); });
+  const grandTotal = Object.values(stageTotal).reduce((a,b)=>a+b,0);
+
+  // 뱃지 클래스 → 텍스트 색상 매핑
+  const BADGE_COLOR = {
+    'badge-blue':   '#2563EB',
+    'badge-indigo': '#4338CA',
+    'badge-purple': '#9333EA',
+    'badge-green':  '#059669',
+    'badge-red':    '#DC2626',
+    'badge-orange': '#EA580C',
+    'badge-yellow': '#CA8A04',
+    'badge-gray':   '#64748B',
+  };
+  // 각 단계의 색상 미리 계산
+  const stageColors = {};
+  stages.forEach(s => { stageColors[s] = BADGE_COLOR[stageBadge(s, plan)] || '#1E293B'; });
+
+  let html = `<table class="stats-table">
+    <thead>
+      <tr>
+        <th>담당업무</th>
+        ${stages.map(s => `<th><span class="stage-badge ${stageBadge(s, plan)}">${esc(s)}</span></th>`).join('')}
+      </tr>
+      <tr class="stats-total">
+        <td>합계</td>
+        ${stages.map(s => {
+          const v = stageTotal[s]||0;
+          const style = v > 0 ? ` style="color:${stageColors[s]};font-weight:700"` : '';
+          return `<td class="stats-cell"${style}>${v}</td>`;
+        }).join('')}
+      </tr>
+    </thead><tbody>`;
+
+  const KEY_STAGES = ['대기중','문자완료','면접예정','채용후보','채용완료'];
+  duties.forEach(d => {
+    const hasAny = KEY_STAGES.some(s => (matrix[d][s]||0) >= 1);
+    let rowBg = '';
+    if ((matrix[d]['채용완료']||0) >= 1)      rowBg = '#EFF6FF'; // 파란색
+    else if ((matrix[d]['채용후보']||0) >= 1)  rowBg = '#F0FDF4'; // 녹색
+    else if (!hasAny)                          rowBg = '#FEF2F2'; // 빨간색
+    const rowStyle = rowBg ? ` style="background:${rowBg};"` : '';
+    const dutyDesc = (plan.jobDutyDescs || {})[d] || '';
+    const dutyCell = dutyDesc
+      ? `<td class="duty-cell"
+           onclick="toggleDutyTooltip(event,'${d.replace(/'/g,"\\'")}','${dutyDesc.replace(/'/g,"\\'")}')">${esc(d)}</td>`
+      : `<td>${esc(d)}</td>`;
+    html += `<tr${rowStyle}>
+      ${dutyCell}
+      ${stages.map(s => {
+        const v = matrix[d][s]||0;
+        const style = v > 0 ? ` style="color:${stageColors[s]};font-weight:700"` : '';
+        return `<td class="stats-cell ${v===0?'zero':''}"${style}>${v}</td>`;
+      }).join('')}
+    </tr>`;
+  });
+
+  html += `</tbody></table>`;
+
+  el.innerHTML = html;
+}
+
+// ─── 담당업무 툴팁 ───
+let _dutyTipTarget = null;
+function toggleDutyTooltip(e, name, desc) {
+  const tip = document.getElementById('dutyTooltip'); if (!tip) return;
+  const cell = e.currentTarget;
+  // 같은 셀 다시 누르면 닫기
+  if (_dutyTipTarget === cell && tip.classList.contains('visible')) {
+    hideDutyTooltip(); return;
+  }
+  _dutyTipTarget = cell;
+  tip.textContent = desc;
+  tip.classList.add('visible');
+  const rect = cell.getBoundingClientRect();
+  const th = tip.offsetHeight;
+  const x = rect.right + 10;
+  const y = rect.top + (rect.height / 2) - (th / 2);
+  tip.style.left = Math.min(x, window.innerWidth - tip.offsetWidth - 8) + 'px';
+  tip.style.top  = Math.max(8, y) + 'px';
+}
+function hideDutyTooltip() {
+  const tip = document.getElementById('dutyTooltip'); if (!tip) return;
+  tip.classList.remove('visible');
+  _dutyTipTarget = null;
+}
+// 툴팁 외부 클릭 시 닫기
+document.addEventListener('click', e => {
+  if (!e.target.closest('.duty-cell') && !e.target.closest('#dutyTooltip')) hideDutyTooltip();
+});
+
+function applyFilter() {
+  state.filter.dept   = document.getElementById('filterDept').value;
+  state.filter.stage  = document.getElementById('filterStage').value;
+  state.filter.search = document.getElementById('searchInput').value.trim();
+  renderTable();
+}
+
+// ─────────────────────────────────────────────
+// MODAL HELPERS
+// ─────────────────────────────────────────────
+function showModal(html) { document.getElementById('modalRoot').innerHTML = html; }
+function closeModal()    { document.getElementById('modalRoot').innerHTML = ''; }
+function bgClose(e)      { if (e.target.classList.contains('modal-overlay')) closeModal(); }
+
+// ─────────────────────────────────────────────
+// MODAL: LOGIN
+// ─────────────────────────────────────────────
+function openLogin() {
+  showModal(`
+    <div class="modal-overlay" onclick="bgClose(event)">
+      <div class="modal modal-sm">
+        <div class="modal-header">
+          <span class="modal-title">🔐 관리자 로그인</span>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">비밀번호</label>
+            <input class="form-input" type="password" id="loginPw" placeholder="비밀번호 입력"
+              onkeydown="if(event.key==='Enter')doLogin()">
+          </div>
+          <p id="loginErr" style="color:#EF4444;font-size:13px;margin-top:4px;display:none">비밀번호가 올바르지 않습니다.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+          <button class="btn btn-primary"   onclick="doLogin()">로그인</button>
+        </div>
+      </div>
+    </div>`);
+  setTimeout(() => document.getElementById('loginPw')?.focus(), 40);
+}
+function doLogin() {
+  const pw = document.getElementById('loginPw').value;
+  if (pw === db.adminPassword) {
+    state.isAdmin = true; saveState(); closeModal(); renderAll();
+  } else {
+    document.getElementById('loginErr').style.display = 'block';
+  }
+}
+function doLogout() { state.isAdmin = false; saveState(); renderAll(); }
+
+// ─────────────────────────────────────────────
+// MODAL: 채용계획 생성 / 수정
+// ─────────────────────────────────────────────
+function openPlanForm(id) {
+  const p = id ? db.plans.find(x => x.id === id) : null;
+  showModal(`
+    <div class="modal-overlay" onclick="bgClose(event)">
+      <div class="modal modal-sm">
+        <div class="modal-header">
+          <span class="modal-title">${p ? '✏️ 채용계획 수정' : '➕ 새 채용계획'}</span>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">채용계획명 <span class="required">*</span></label>
+            <input class="form-input" id="pName" value="${esc(p?.name||'')}" placeholder="예) 2026년 상반기 공채">
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">채용기간 시작</label>
+              <input class="form-input" type="date" id="pStart" value="${esc(p?.startDate||'')}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">채용기간 종료</label>
+              <input class="form-input" type="date" id="pEnd" value="${esc(p?.endDate||'')}">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+          <button class="btn btn-primary" onclick="savePlan(${p ? `'${p.id}'` : 'null'})">${p ? '저장' : '만들기'}</button>
+        </div>
+      </div>
+    </div>`);
+  setTimeout(() => document.getElementById('pName')?.focus(), 40);
+}
+
+function savePlan(id) {
+  const name  = document.getElementById('pName').value.trim();
+  const start = document.getElementById('pStart').value;
+  const end   = document.getElementById('pEnd').value;
+  if (!name) { alert('채용계획명을 입력하세요.'); return; }
+
+  if (id && id !== 'null') {
+    const p = db.plans.find(x => x.id === id);
+    if (p) { p.name = name; p.startDate = start; p.endDate = end; }
+  } else {
+    const p = newPlan(name, start, end);
+    db.plans.push(p);
+    state.activePlanId = p.id;
+  }
+  saveDb(); closeModal(); renderAll();
+}
+
+function deletePlan(e, id) {
+  e.stopPropagation();
+  const p = db.plans.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm(`'${p.name}' 채용계획을 삭제할까요?\n모든 지원자 데이터가 함께 삭제됩니다.`)) return;
+  db.plans = db.plans.filter(x => x.id !== id);
+  if (state.activePlanId === id) state.activePlanId = db.plans[0]?.id || null;
+  saveDb(); renderAll();
+}
+
+// ─────────────────────────────────────────────
+// MODAL: VIEW CANDIDATE
+// ─────────────────────────────────────────────
+function openViewModal(id) {
+  const plan = activePlan(); if (!plan) return;
+  const c = plan.candidates.find(x => x.id === id); if (!c) return;
+
+  const icHtml = plan.interviewCategories.length
+    ? plan.interviewCategories.map(cat => `
+        <div class="ic-block">
+          <div class="ic-block-label">${esc(cat)}</div>
+          <div class="ic-block-value">${c.interviewContent?.[cat]
+            ? esc(c.interviewContent[cat])
+            : '<span style="color:#CBD5E1;font-style:italic">내용 없음</span>'}</div>
+        </div>`).join('')
+    : '<p style="color:#CBD5E1;font-size:13px">면접내용 분류가 없습니다.</p>';
+
+  showModal(`
+    <div class="modal-overlay" onclick="bgClose(event)">
+      <div class="modal modal-lg">
+        <div class="modal-header">
+          <span class="modal-title">👤 ${esc(c.name)}</span>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          ${c.gender||c.age||c.phone||c.address ? `
+          <div class="info-row"><span class="info-label">성별</span><span class="info-value">${esc(c.gender)||'<span class="info-empty">-</span>'}</span></div>
+          <div class="info-row"><span class="info-label">나이</span><span class="info-value">${esc(c.age)||'<span class="info-empty">-</span>'}</span></div>
+          <div class="info-row"><span class="info-label">휴대폰</span><span class="info-value">${esc(c.phone)||'<span class="info-empty">-</span>'}</span></div>
+          <div class="info-row"><span class="info-label">주소</span><span class="info-value">${esc(c.address)||'<span class="info-empty">-</span>'}</span></div>
+          <hr style="border:none;border-top:1px solid #E2E8F0;margin:10px 0">` : ''}
+          <div class="info-row"><span class="info-label">지원 부서</span><span class="info-value">${esc(c.department)}</span></div>
+          <div class="info-row"><span class="info-label">담당업무</span><span class="info-value">${esc(c.jobDuty)||'<span class="info-empty">-</span>'}</span></div>
+          <div class="info-row">
+            <span class="info-label">면접 단계</span>
+            <span class="info-value"><span class="stage-badge ${stageBadge(c.stage)}">${esc(c.stage)}</span></span>
+          </div>
+          <div class="info-row"><span class="info-label">면접일시</span><span class="info-value">${fmtDateTime(c.interviewDate, c.interviewTime)}</span></div>
+          <div class="info-row">
+            <span class="info-label">메모</span>
+            <span class="info-value" style="white-space:pre-wrap">${c.memo ? esc(c.memo) : '<span class="info-empty">없음</span>'}</span>
+          </div>
+          <div style="margin-top:18px">
+            <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.06em;margin-bottom:11px">면접 내용</div>
+            ${icHtml}
+          </div>
+        </div>
+        <div class="modal-footer">
+          ${state.isAdmin ? `
+            <button class="btn btn-secondary" onclick="closeModal();openCandidateForm('${id}')">수정</button>
+            <button class="btn btn-danger"    onclick="confirmDelete('${id}')">삭제</button>` : ''}
+          <button class="btn btn-primary" onclick="closeModal()">닫기</button>
+        </div>
+      </div>
+    </div>`);
+}
+
+// ─────────────────────────────────────────────
+// MODAL: ADD / EDIT CANDIDATE
+// ─────────────────────────────────────────────
+function openCandidateForm(id) {
+  const plan = activePlan(); if (!plan) return;
+  const c    = id ? plan.candidates.find(x => x.id === id) : null;
+  const isEdit = !!c;
+
+  const defaultDept  = c?.department  ?? '청구팀';
+  const defaultStage = c?.stage       ?? '대기중';
+  const deptOpts = plan.departments.map(d =>
+    `<option value="${esc(d)}" ${d===defaultDept?'selected':''}>${esc(d)}</option>`).join('');
+  const dutyOpts = plan.jobDuties.map(j =>
+    `<option value="${esc(j)}" ${c?.jobDuty===j?'selected':''}>${esc(j)}</option>`).join('');
+  const stageOpts = plan.stages.map(s =>
+    `<option value="${esc(s)}" ${s===defaultStage?'selected':''}>${esc(s)}</option>`).join('');
+  const icFields = plan.interviewCategories.map((cat, i) => `
+    <div class="form-group">
+      <label class="form-label">${esc(cat)}</label>
+      <textarea class="form-textarea" id="ic${i}" rows="3">${esc(c?.interviewContent?.[cat]||'')}</textarea>
+    </div>`).join('');
+
+  showModal(`
+    <div class="modal-overlay" onclick="bgClose(event)">
+      <div class="modal modal-lg">
+        <div class="modal-header">
+          <span class="modal-title">${isEdit ? '✏️ 지원자 수정' : '➕ 지원자 추가'}</span>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          ${!isEdit ? `
+          <div class="form-group" style="background:#F0F7FF;border:1px solid #BFDBFE;border-radius:8px;padding:12px 14px;margin-bottom:16px;">
+            <label class="form-label" style="color:#1D4ED8;font-weight:700;">⚡ 빠른 입력</label>
+            <textarea class="form-textarea" id="f_quick" rows="4" placeholder="잡코리아 등에서 복사한 지원자 정보를 붙여넣으세요.&#10;예) 윤미혜 여 1997년 (만 28세) 휴대폰010-9945-6824 주소경기 고양시"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();parseQuickInput();}"></textarea>
+            <button class="btn btn-secondary btn-sm" style="margin-top:8px;" onclick="parseQuickInput()">자동 채우기</button>
+          </div>` : ''}
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">이름 <span class="required">*</span></label>
+              <input class="form-input" id="f_name" value="${esc(c?.name||'')}" placeholder="지원자 이름">
+            </div>
+            <div class="form-group">
+              <label class="form-label">성별</label>
+              <select class="form-select" id="f_gender">
+                <option value="">선택</option>
+                <option value="여" ${c?.gender==='여'?'selected':''}>여</option>
+                <option value="남" ${c?.gender==='남'?'selected':''}>남</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">나이</label>
+              <input class="form-input" id="f_age" value="${esc(c?.age||'')}" placeholder="예) 만 28세">
+            </div>
+            <div class="form-group">
+              <label class="form-label">휴대폰</label>
+              <input class="form-input" id="f_phone" value="${esc(c?.phone||'')}" placeholder="010-0000-0000" oninput="formatPhone(this)" maxlength="13">
+            </div>
+            <div class="form-group" style="grid-column:1/-1;">
+              <label class="form-label">주소</label>
+              <input class="form-input" id="f_addr" value="${esc(c?.address||'')}" placeholder="주소">
+            </div>
+            <div class="form-group">
+              <label class="form-label">지원 부서 <span class="required">*</span></label>
+              <select class="form-select" id="f_dept">
+                <option value="">선택하세요</option>${deptOpts}
+              </select>
+            </div>
+            <div class="form-group" style="position:relative;">
+              <label class="form-label">담당업무</label>
+              <input class="form-input" id="f_duty" value="${esc(c?.jobDuty||'')}" placeholder="검색..." autocomplete="off"
+                oninput="dutySearch(this.value)"
+                onkeydown="dutyKeyNav(event)"
+                onblur="setTimeout(()=>document.getElementById('dutyDrop').style.display='none',150)">
+              <div id="dutyDrop" style="display:none;position:absolute;z-index:999;background:#fff;border:1px solid #CBD5E1;border-radius:6px;width:100%;max-height:180px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1);top:100%;left:0;"></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">면접 단계 <span class="required">*</span></label>
+              <select class="form-select" id="f_stage">
+                <option value="">선택하세요</option>${stageOpts}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">면접일시</label>
+              <div style="display:flex;gap:6px;">
+                <input class="form-input" type="date" id="f_date" value="${esc(c?.interviewDate||'')}" style="flex:1;">
+                <select class="form-select" id="f_time" style="width:90px;">
+                  <option value="">시간</option>
+                  ${Array.from({length:24},(_,i)=>`<option value="${i+1}" ${c?.interviewTime==i+1?'selected':''}>${i+1}시</option>`).join('')}
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">메모</label>
+            <textarea class="form-textarea" id="f_memo" rows="3" placeholder="자유 메모...">${esc(c?.memo||'')}</textarea>
+          </div>
+          ${isEdit && plan.interviewCategories.length ? `
+            <div class="form-section-title">면접 내용</div>${icFields}` : ''}
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+          <button class="btn btn-primary" onclick="saveCandidate(${isEdit ? `'${id}'` : 'null'})">
+            ${isEdit ? '저장' : '추가'}
+          </button>
+        </div>
+      </div>
+    </div>`);
+  setTimeout(initFilledStates, 0);
+}
+
+function formatPhone(el) {
+  let v = el.value.replace(/\D/g, '').substring(0, 11);
+  if (v.length < 4) el.value = v;
+  else if (v.length < 8) el.value = v.slice(0,3) + '-' + v.slice(3);
+  else el.value = v.slice(0,3) + '-' + v.slice(3,7) + '-' + v.slice(7);
+  updateFilledState(el);
+}
+
+function updateFilledState(el) {
+  if (el.value && el.value !== '') el.classList.add('filled');
+  else el.classList.remove('filled');
+}
+
+function initFilledStates() {
+  const modal = document.getElementById('modalRoot');
+  if (!modal) return;
+  modal.querySelectorAll('.form-input, .form-select, .form-textarea').forEach(el => {
+    updateFilledState(el);
+    el.addEventListener('input',  () => updateFilledState(el));
+    el.addEventListener('change', () => updateFilledState(el));
+  });
+}
+
+let _dutyIdx = -1;
+
+function dutySearch(val) {
+  _dutyIdx = -1;
+  const plan = activePlan(); if (!plan) return;
+  const drop = document.getElementById('dutyDrop'); if (!drop) return;
+  const q = val.trim().toLowerCase();
+  const descMap = plan.jobDutyDescs || {};
+  // 제목 또는 상세내용 포함 검색
+  const matches = q
+    ? plan.jobDuties.filter(d => d.toLowerCase().includes(q) || (descMap[d] || '').toLowerCase().includes(q))
+    : plan.jobDuties;
+  if (!matches.length) { drop.style.display = 'none'; return; }
+  drop.innerHTML = matches.map((d, i) => {
+    const desc = descMap[d] || '';
+    return `<div data-idx="${i}" data-val="${d.replace(/"/g,'&quot;')}"
+      style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #F1F5F9;"
+      onmousedown="dutySelect('${d.replace(/'/g,"\\'")}');event.preventDefault()"
+      onmouseover="dutyHighlight(${i})">
+        <div style="font-size:13px;font-weight:500;color:#1E293B">${esc(d)}</div>
+        ${desc ? `<div style="font-size:11px;color:#64748B;margin-top:2px">${esc(desc)}</div>` : ''}
+      </div>`;
+  }).join('');
+  drop.style.display = 'block';
+}
+
+function dutySelect(val) {
+  const el = document.getElementById('f_duty');
+  el.value = val;
+  updateFilledState(el);
+  document.getElementById('dutyDrop').style.display = 'none';
+  _dutyIdx = -1;
+}
+
+function dutyHighlight(idx) {
+  _dutyIdx = idx;
+  const drop = document.getElementById('dutyDrop');
+  drop.querySelectorAll('[data-idx]').forEach((el, i) => {
+    el.style.background = i === idx ? '#EFF6FF' : '';
+    el.style.borderLeft = i === idx ? '3px solid #2563EB' : '3px solid transparent';
+  });
+}
+
+function dutyKeyNav(e) {
+  const drop = document.getElementById('dutyDrop');
+  if (!drop || drop.style.display === 'none') return;
+  const items = drop.querySelectorAll('[data-idx]');
+  if (!items.length) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    _dutyIdx = Math.min(_dutyIdx + 1, items.length - 1);
+    dutyHighlight(_dutyIdx);
+    items[_dutyIdx].scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    _dutyIdx = Math.max(_dutyIdx - 1, 0);
+    dutyHighlight(_dutyIdx);
+    items[_dutyIdx].scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter' && _dutyIdx >= 0) {
+    e.preventDefault();
+    dutySelect(items[_dutyIdx].dataset.val);
+  } else if (e.key === 'Escape') {
+    drop.style.display = 'none'; _dutyIdx = -1;
+  }
+}
+
+function parseQuickInput() {
+  const raw = (document.getElementById('f_quick')?.value || '').trim();
+  if (!raw) return;
+
+  function fill(id, val) {
+    const el = document.getElementById(id); if (!el) return;
+    el.value = val;
+    updateFilledState(el);
+  }
+
+  // 이름
+  const nameMatch = raw.match(/^([가-힣]{2,5})/m);
+  if (nameMatch) fill('f_name', nameMatch[1]);
+
+  // 성별
+  if (/여/.test(raw)) fill('f_gender', '여');
+  else if (/남/.test(raw)) fill('f_gender', '남');
+
+  // 나이
+  const ageMatch = raw.match(/만\s*(\d+)\s*세/);
+  if (ageMatch) fill('f_age', '만 ' + ageMatch[1] + '세');
+
+  // 휴대폰
+  const phoneMatch = raw.match(/0\d{1,2}[-\s]?\d{3,4}[-\s]?\d{4}/);
+  if (phoneMatch) {
+    let p = phoneMatch[0].replace(/\s/g, '');
+    if (!p.includes('-')) p = p.replace(/^(0\d{1,2})(\d{3,4})(\d{4})$/, '$1-$2-$3');
+    fill('f_phone', p);
+  }
+
+  // 주소
+  const addrMatch = raw.match(/주소\s*([^\n휴대폰Email이메일]+)/);
+  if (addrMatch) fill('f_addr', addrMatch[1].trim());
+}
+
+function saveCandidate(id) {
+  const plan  = activePlan(); if (!plan) return;
+  const name  = document.getElementById('f_name').value.trim();
+  const gender= document.getElementById('f_gender')?.value || '';
+  const age   = document.getElementById('f_age')?.value.trim() || '';
+  const phone = document.getElementById('f_phone')?.value.trim() || '';
+  const addr  = document.getElementById('f_addr')?.value.trim() || '';
+  const dept  = document.getElementById('f_dept').value;
+  const duty  = document.getElementById('f_duty').value.trim();
+  const stage = document.getElementById('f_stage').value;
+  const date  = document.getElementById('f_date').value;
+  const time  = document.getElementById('f_time')?.value || '';
+  const memo  = document.getElementById('f_memo').value.trim();
+
+  if (!name || !dept || !stage) {
+    alert('이름, 지원 부서, 면접 단계는 필수입니다.'); return;
+  }
+  const interviewContent = {};
+  plan.interviewCategories.forEach((cat, i) => {
+    const el = document.getElementById(`ic${i}`);
+    if (el) interviewContent[cat] = el.value.trim();
+  });
+
+  // 면접일시 입력 시 대기중 → 면접예정 자동 변경
+  let finalStage = stage;
+  if (date && stage === '대기중' && plan.stages.includes('면접예정')) {
+    finalStage = '면접예정';
+  }
+
+  if (id && id !== 'null') {
+    const idx = plan.candidates.findIndex(x => x.id === id);
+    if (idx !== -1) plan.candidates[idx] = { ...plan.candidates[idx], name, gender, age, phone, address: addr, department: dept, jobDuty: duty, stage: finalStage, interviewDate: date, interviewTime: time, memo, interviewContent };
+  } else {
+    plan.candidates.push({ id: uid(), name, gender, age, phone, address: addr, department: dept, jobDuty: duty, stage: finalStage, interviewDate: date, interviewTime: time, memo, interviewContent });
+  }
+  saveDb(); closeModal(); renderAll();
+}
+
+function confirmDelete(id) {
+  const plan = activePlan(); if (!plan) return;
+  const c = plan.candidates.find(x => x.id === id); if (!c) return;
+  if (!confirm(`'${c.name}' 지원자를 삭제할까요?`)) return;
+  plan.candidates = plan.candidates.filter(x => x.id !== id);
+  saveDb(); closeModal(); renderAll();
+}
+
+// ─────────────────────────────────────────────
+// MODAL: SETTINGS
+// ─────────────────────────────────────────────
+function openSettings() { renderSettings(); }
+
+function renderSettings() {
+  const plan = activePlan();
+
+  // 섹션 정의
+  const SECTIONS = [
+    { sid: 'dept',  icon: '📁', title: '부서 관리',           key: 'departments',         descKey: 'departmentDescs',        rmFn: 'rmDept'  },
+    { sid: 'duty',  icon: '💼', title: '담당업무 관리',       key: 'jobDuties',           descKey: 'jobDutyDescs',           rmFn: 'rmDuty'  },
+    { sid: 'site',  icon: '🌐', title: '지원사이트 관리',     key: 'applySites',          descKey: 'applySiteDescs',         rmFn: 'rmSite'  },
+    { sid: 'stage', icon: '🔄', title: '단계별 처리상태 관리',key: 'stages',              descKey: 'stageDescs',             rmFn: 'rmStage' },
+    { sid: 'ic',    icon: '📝', title: '면접내용 분류 관리',  key: 'interviewCategories', descKey: 'interviewCategoryDescs', rmFn: 'rmIc'    },
+  ];
+
+  const makeSettingsSection = ({ sid, icon, title, key, descKey, rmFn }) => {
+    if (!plan) return '';
+    const arr = plan[key] || [];
+    const descMap = plan[descKey] || {};
+
+    const listItems = arr.length
+      ? arr.map((v, i) => `
+          <div class="settings-list-item" id="settingsItem-${sid}-${i}" onclick="editSettingsItem('${sid}',${i})">
+            <div class="settings-item-title">${esc(v)}</div>
+            <div class="settings-item-desc">${esc(descMap[v] || '')}</div>
+            ${state.isAdmin ? `<button class="settings-item-del" onclick="event.stopPropagation();${rmFn}(${i})" title="삭제">✕</button>` : ''}
+          </div>`).join('')
+      : `<div style="color:#CBD5E1;font-size:13px;padding:6px 2px">항목이 없습니다.</div>`;
+
+    const addBtnHtml = state.isAdmin
+      ? `<button class="settings-add-btn" id="addBtn-${sid}" onclick="showSettingsAddRow('${sid}')">＋ 추가</button>`
+      : '';
+
+    const addRowHtml = state.isAdmin ? `
+      <div class="settings-add-row" id="addRow-${sid}" style="display:none">
+        <input class="title-input" id="addTitle-${sid}" placeholder="제목 입력"
+          onkeydown="if(event.key==='Enter')document.getElementById('addDesc-${sid}').focus()">
+        <input class="desc-input" id="addDesc-${sid}" placeholder="상세내용 입력"
+          onkeydown="if(event.key==='Enter')confirmSettingsAdd('${sid}')">
+        <button class="btn btn-primary btn-sm" onclick="confirmSettingsAdd('${sid}')">✓</button>
+        <button class="btn btn-secondary btn-sm" onclick="hideSettingsAddRow('${sid}')">✕</button>
+      </div>` : '';
+
+    return `
+      <div class="settings-section">
+        <div class="settings-section-title">${icon} ${title}${addBtnHtml}</div>
+        <div class="settings-list">${listItems}</div>
+        ${addRowHtml}
+      </div>`;
+  };
+
+  const planSections = plan
+    ? SECTIONS.map(makeSettingsSection).join('')
+    : '<p style="color:#94A3B8;font-size:13px">채용계획을 먼저 선택하세요.</p>';
+
+  showModal(`
+    <div class="modal-overlay" onclick="bgClose(event)">
+      <div class="modal modal-lg">
+        <div class="modal-header">
+          <span class="modal-title">⚙ 설정${plan ? ' — ' + esc(plan.name) : ''}</span>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+
+          ${planSections}
+
+          ${state.isAdmin ? `
+          <div class="settings-section">
+            <div class="settings-section-title">🤖 Claude API 키</div>
+            <div class="form-group">
+              <label class="form-label">API 키</label>
+              <input class="form-input" type="password" id="apiKeyInput" value="${getApiKey()}" placeholder="sk-ant-...">
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="saveApiKeyFromInput()">저장</button>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-section-title">🔑 비밀번호 변경</div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">새 비밀번호</label>
+                <input class="form-input" type="password" id="pw1" placeholder="새 비밀번호">
+              </div>
+              <div class="form-group">
+                <label class="form-label">비밀번호 확인</label>
+                <input class="form-input" type="password" id="pw2" placeholder="다시 입력">
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="changePw()">비밀번호 변경</button>
+          </div>` : ''}
+
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="closeModal()">닫기</button>
+        </div>
+      </div>
+    </div>`);
+}
+
+// ─── 설정 추가행 제어 ───
+function showSettingsAddRow(sid) {
+  const row = document.getElementById('addRow-' + sid);
+  const btn = document.getElementById('addBtn-' + sid);
+  if (row) { row.style.display = 'flex'; }
+  if (btn) { btn.style.display = 'none'; }
+  const ti = document.getElementById('addTitle-' + sid);
+  if (ti) ti.focus();
+}
+function hideSettingsAddRow(sid) {
+  const row = document.getElementById('addRow-' + sid);
+  const btn = document.getElementById('addBtn-' + sid);
+  if (row) { row.style.display = 'none'; }
+  if (btn) { btn.style.display = ''; }
+  const ti = document.getElementById('addTitle-' + sid);
+  const di = document.getElementById('addDesc-' + sid);
+  if (ti) ti.value = '';
+  if (di) di.value = '';
+}
+function confirmSettingsAdd(sid) {
+  const plan = activePlan(); if (!plan) return;
+  const title = (document.getElementById('addTitle-' + sid)?.value || '').trim();
+  const desc  = (document.getElementById('addDesc-'  + sid)?.value || '').trim();
+  if (!title) { document.getElementById('addTitle-' + sid)?.focus(); return; }
+
+  const SECTION_MAP = {
+    dept:  { key: 'departments',         descKey: 'departmentDescs',        label: '부서' },
+    duty:  { key: 'jobDuties',           descKey: 'jobDutyDescs',           label: '담당업무' },
+    site:  { key: 'applySites',          descKey: 'applySiteDescs',         label: '지원사이트' },
+    stage: { key: 'stages',              descKey: 'stageDescs',             label: '단계' },
+    ic:    { key: 'interviewCategories', descKey: 'interviewCategoryDescs', label: '분류' },
+  };
+  const sec = SECTION_MAP[sid]; if (!sec) return;
+  if ((plan[sec.key] || []).includes(title)) { alert(`이미 존재하는 ${sec.label}입니다.`); return; }
+
+  plan[sec.key].push(title);
+  if (desc) {
+    if (!plan[sec.descKey]) plan[sec.descKey] = {};
+    plan[sec.descKey][title] = desc;
+  }
+  // 단계 추가 시 색상 자동 배정
+  if (sid === 'stage') {
+    if (!plan.stageColors) plan.stageColors = {};
+    assignStageColor(plan, title);
+  }
+  saveDb(); renderFilters(); renderSettings();
+}
+
+// ─── 설정 항목 인라인 편집 ───
+const SECTION_MAP = {
+  dept:  { key: 'departments',         descKey: 'departmentDescs',        label: '부서' },
+  duty:  { key: 'jobDuties',           descKey: 'jobDutyDescs',           label: '담당업무' },
+  site:  { key: 'applySites',          descKey: 'applySiteDescs',         label: '지원사이트' },
+  stage: { key: 'stages',              descKey: 'stageDescs',             label: '단계' },
+  ic:    { key: 'interviewCategories', descKey: 'interviewCategoryDescs', label: '분류' },
+};
+
+function editSettingsItem(sid, i) {
+  const plan = activePlan(); if (!plan) return;
+  const sec = SECTION_MAP[sid]; if (!sec) return;
+  const name = plan[sec.key][i];
+  const desc = (plan[sec.descKey] || {})[name] || '';
+  const itemEl = document.getElementById(`settingsItem-${sid}-${i}`);
+  if (!itemEl) return;
+
+  itemEl.outerHTML = `
+    <div class="settings-add-row" id="editRow-${sid}-${i}">
+      <input class="title-input" id="editTitle-${sid}-${i}" value="${name.replace(/"/g,'&quot;')}" placeholder="제목"
+        onkeydown="if(event.key==='Enter')document.getElementById('editDesc-${sid}-${i}').focus();if(event.key==='Escape')renderSettings()">
+      <input class="desc-input" id="editDesc-${sid}-${i}" value="${desc.replace(/"/g,'&quot;')}" placeholder="상세내용"
+        onkeydown="if(event.key==='Enter')confirmEditSettingsItem('${sid}',${i},'${name.replace(/'/g,"\\'")}');if(event.key==='Escape')renderSettings()">
+      <button class="btn btn-primary btn-sm" onclick="confirmEditSettingsItem('${sid}',${i},'${name.replace(/'/g,"\\'")}')">✓</button>
+      <button class="btn btn-secondary btn-sm" onclick="renderSettings()">✕</button>
+    </div>`;
+
+  document.getElementById(`editTitle-${sid}-${i}`)?.select();
+}
+
+function confirmEditSettingsItem(sid, i, oldName) {
+  const plan = activePlan(); if (!plan) return;
+  const sec = SECTION_MAP[sid]; if (!sec) return;
+  const newName = (document.getElementById(`editTitle-${sid}-${i}`)?.value || '').trim();
+  const newDesc = (document.getElementById(`editDesc-${sid}-${i}`)?.value || '').trim();
+  if (!newName) return;
+  if (newName !== oldName && (plan[sec.key] || []).includes(newName)) {
+    alert(`이미 존재하는 ${sec.label}입니다.`); return;
+  }
+  plan[sec.key][i] = newName;
+  if (!plan[sec.descKey]) plan[sec.descKey] = {};
+  if (oldName !== newName) {
+    plan[sec.descKey][newName] = plan[sec.descKey][oldName] || '';
+    delete plan[sec.descKey][oldName];
+    // 단계명 변경 시 색상 키도 이전
+    if (sid === 'stage' && plan.stageColors) {
+      plan.stageColors[newName] = plan.stageColors[oldName];
+      delete plan.stageColors[oldName];
+    }
+  }
+  if (newDesc) plan[sec.descKey][newName] = newDesc;
+  else delete plan[sec.descKey][newName];
+  saveDb(); renderFilters(); renderSettings();
+}
+
+// Settings helpers — remove with desc map cleanup
+function settingRemove(listKey, descKey, i, label) {
+  const plan = activePlan(); if (!plan) return;
+  const name = plan[listKey][i];
+  if (!confirm(`'${name}' ${label}을(를) 삭제할까요?\n기존 데이터는 유지됩니다.`)) return;
+  plan[listKey].splice(i, 1);
+  if (descKey && plan[descKey]) delete plan[descKey][name];
+  saveDb(); renderFilters(); renderSettings();
+}
+
+function rmDept(i)  { settingRemove('departments',         'departmentDescs',        i, '부서'); }
+function rmDuty(i)  { settingRemove('jobDuties',           'jobDutyDescs',           i, '담당업무'); }
+function rmSite(i)  { settingRemove('applySites',          'applySiteDescs',         i, '지원사이트'); }
+function rmStage(i) { settingRemove('stages',              'stageDescs',             i, '단계'); }
+function rmIc(i)    { settingRemove('interviewCategories', 'interviewCategoryDescs', i, '분류'); }
+
+function changePw() {
+  const p1 = document.getElementById('pw1').value;
+  const p2 = document.getElementById('pw2').value;
+  if (!p1) { alert('새 비밀번호를 입력하세요.'); return; }
+  if (p1 !== p2) { alert('비밀번호가 일치하지 않습니다.'); return; }
+  db.adminPassword = p1; saveDb();
+  alert('비밀번호가 변경되었습니다.');
+  document.getElementById('pw1').value = '';
+  document.getElementById('pw2').value = '';
+}
+
+// ─────────────────────────────────────────────
+// PDF IMPORT
+// ─────────────────────────────────────────────
+function triggerPdfImport() {
+  if (!getApiKey()) {
+    alert('⚙ 설정에서 Claude API 키를 먼저 입력해주세요.');
+    openSettings();
+    return;
+  }
+  document.getElementById('pdfFileInput').value = '';
+  document.getElementById('pdfFileInput').click();
+}
+
+async function handlePdfFiles(files) {
+  if (!files.length) return;
+  const plan = activePlan(); if (!plan) return;
+
+  let successCount = 0;
+  let failList = [];
+
+  showProgressModal(0, files.length, '');
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    updateProgressModal(i + 1, files.length, file.name);
+    try {
+      const base64 = await fileToBase64(file);
+      const info   = await extractFromPdf(base64, plan);
+      plan.candidates.push({
+        id: uid(),
+        name:             info.name     || '',
+        department:       info.department || '',
+        jobDuty:          info.jobDuty  || '',
+        position:         info.position || '',
+        stage:            plan.stages[0] || '',
+        interviewDate:    '',
+        memo:             '',
+        interviewContent: {}
+      });
+      successCount++;
+    } catch(e) {
+      failList.push(file.name);
+    }
+  }
+
+  saveDb();
+  closeModal();
+  renderAll();
+
+  const msg = failList.length
+    ? `완료!\n\n✅ 등록 성공: ${successCount}명\n❌ 실패: ${failList.join(', ')}`
+    : `✅ ${successCount}명이 등록되었습니다.`;
+  alert(msg);
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function extractFromPdf(base64, plan) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': getApiKey(),
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 512,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'document',
+            source: { type: 'base64', media_type: 'application/pdf', data: base64 }
+          },
+          {
+            type: 'text',
+            text: `이 이력서에서 지원자 정보를 추출하세요. 반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요.
+
+{
+  "name": "지원자 이름",
+  "position": "지원 직무 또는 희망 직무",
+  "department": "아래 부서 목록 중 가장 적합한 것 (없으면 빈 문자열)",
+  "jobDuty": "아래 담당업무 목록 중 가장 적합한 것 (없으면 빈 문자열)"
+}
+
+부서 목록: ${plan.departments.join(', ') || '없음'}
+담당업무 목록: ${plan.jobDuties.join(', ') || '없음'}`
+          }
+        ]
+      }]
+    })
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error?.message || 'API 오류');
+  }
+  const data = await res.json();
+  return JSON.parse(data.content[0].text.trim());
+}
+
+function showProgressModal(current, total, filename) {
+  showModal(`
+    <div class="modal-overlay">
+      <div class="modal modal-sm">
+        <div class="modal-header">
+          <span class="modal-title">📄 이력서 불러오는 중...</span>
+        </div>
+        <div class="modal-body" style="text-align:center;padding:28px 24px">
+          <div style="font-size:36px;margin-bottom:14px">⏳</div>
+          <div id="progressFile" style="font-size:13px;color:#475569;margin-bottom:16px;word-break:break-all">${filename || '준비 중...'}</div>
+          <div style="background:#F1F5F9;border-radius:8px;height:8px;overflow:hidden">
+            <div id="progressBar" style="background:#2563EB;height:100%;width:0%;transition:width 0.3s;border-radius:8px"></div>
+          </div>
+          <div id="progressCount" style="font-size:12px;color:#94A3B8;margin-top:8px">${current} / ${total}</div>
+        </div>
+      </div>
+    </div>`);
+}
+
+function updateProgressModal(current, total, filename) {
+  const pct = Math.round((current / total) * 100);
+  const bar  = document.getElementById('progressBar');
+  const file = document.getElementById('progressFile');
+  const cnt  = document.getElementById('progressCount');
+  if (bar)  bar.style.width   = pct + '%';
+  if (file) file.textContent  = filename;
+  if (cnt)  cnt.textContent   = `${current} / ${total}`;
+}
+
+function saveApiKeyFromInput() {
+  const key = document.getElementById('apiKeyInput')?.value.trim();
+  if (!key) { alert('API 키를 입력해주세요.'); return; }
+  saveApiKey(key);
+  alert('✅ API 키가 저장되었습니다.');
+}
+
+// ─────────────────────────────────────────────
+// RENDER ALL
+// ─────────────────────────────────────────────
+function renderAll() {
+  renderHeader();
+  renderSidebar();
+  renderPlanContent();
+  if (activePlan()) switchView(currentView);
+}
+
+// 면접일시 있는데 대기중인 기존 지원자 → 면접예정 일괄 변경
+(function migrateInterviewStages() {
+  let changed = false;
+  (db.plans || []).forEach(p => {
+    if (!p.stages.includes('면접예정')) return;
+    (p.candidates || []).forEach(c => {
+      if (c.interviewDate && c.stage === '대기중') {
+        c.stage = '면접예정';
+        changed = true;
+      }
+    });
+  });
+  if (changed) saveDb();
+})();
+
+renderAll();
+syncWithServer();
+</script>
+</body>
+</html>
