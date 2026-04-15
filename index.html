@@ -1343,7 +1343,12 @@ function renderStats() {
   const dutySet = new Set([...plan.jobDuties, ...plan.candidates.map(c => c.jobDuty || '미지정')]);
   if (!plan.jobDuties.length && !plan.candidates.length) dutySet.add('미지정');
   const duties = [...dutySet];
-  const stages = plan.stages;
+
+  // 통계 표시용: 채용후보↔불합격 위치 교체
+  const stages = [...plan.stages];
+  const cbIdx = stages.indexOf('채용후보');
+  const bjIdx = stages.indexOf('불합격');
+  if (cbIdx !== -1 && bjIdx !== -1) { stages[cbIdx] = '불합격'; stages[bjIdx] = '채용후보'; }
 
 
   if (!duties.length) {
