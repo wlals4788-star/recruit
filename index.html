@@ -1284,7 +1284,7 @@ function renderCalendar() {
       const parts = [esc(c.name)];
       if (c.jobDuty) parts.push(esc(c.jobDuty));
       if (c.interviewTime) parts.push(c.interviewTime + '시');
-      const bg = c.stage === '노쇼' ? '#DC2626'
+      const bg = (c.stage === '노쇼' || c.stage === '면접의사없음') ? '#DC2626'
                : c.stage === '채용후보' ? '#059669'
                : evBg;
       return `<div class="cal-event" style="background:${bg};">${parts.join(' / ')}</div>`;
