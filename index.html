@@ -1896,6 +1896,15 @@ function saveCandidate(id) {
     const idx = plan.candidates.findIndex(x => x.id === id);
     if (idx !== -1) plan.candidates[idx] = { ...plan.candidates[idx], name, gender, age, phone, address: addr, department: dept, jobDuty: duty, stage: finalStage, interviewDate: date, interviewTime: time, memo, interviewContent };
   } else {
+    // 이름 + 연락처 완전 일치 중복 체크
+    const normPhone = phone.replace(/-/g, '');
+    const dup = plan.candidates.find(x =>
+      x.name === name && x.phone.replace(/-/g, '') === normPhone && normPhone !== ''
+    );
+    if (dup) {
+      alert(`이미 등록된 지원자입니다.\n이름: ${dup.name} / 연락처: ${dup.phone}`);
+      return;
+    }
     plan.candidates.push({ id: uid(), name, gender, age, phone, address: addr, department: dept, jobDuty: duty, stage: finalStage, interviewDate: date, interviewTime: time, memo, interviewContent });
   }
   saveDb(); closeModal(); renderAll();
