@@ -961,9 +961,20 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function fmtDate(d) { return d ? d.replace(/-/g,'.') : '-'; }
+function fmtTime(t) {
+  if (!t) return '';
+  if (String(t).includes(':')) return t;          // 이미 HH:MM 형식
+  return String(t).padStart(2,'0') + ':00';       // 구형 숫자 데이터 호환
+}
+function timeToMinutes(t) {
+  if (!t) return 0;
+  const s = fmtTime(t);
+  const [h, m] = s.split(':').map(Number);
+  return h * 60 + (m || 0);
+}
 function fmtDateTime(d, t) {
   if (!d) return '-';
-  return fmtDate(d) + (t ? ' ' + t + '시' : '');
+  return fmtDate(d) + (t ? ' ' + fmtTime(t) : '');
 }
 function fmtPeriod(p) {
   if (!p.startDate && !p.endDate) return '기간 미설정';
@@ -1265,9 +1276,7 @@ function renderCalendar() {
   for (let d = 1; d <= lastDate; d++) {
     const dateStr = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
     const events = (dayMap[dateStr] || []).slice().sort((a,b) => {
-      const ta = parseInt(a.interviewTime || '0', 10);
-      const tb = parseInt(b.interviewTime || '0', 10);
-      return ta - tb;
+      return timeToMinutes(a.interviewTime) - timeToMinutes(b.interviewTime);
     });
     const isToday = dateStr === todayStr;
     const allDone = events.length > 0 && events.every(c => DONE_STAGES.some(ds => c.stage.includes(ds)));
@@ -1283,7 +1292,7 @@ function renderCalendar() {
     const evHtml = events.slice(0,5).map(c => {
       const parts = [esc(c.name)];
       if (c.jobDuty) parts.push(esc(c.jobDuty));
-      if (c.interviewTime) parts.push(c.interviewTime + '시');
+      if (c.interviewTime) parts.push(fmtTime(c.interviewTime));
       const bg = (c.stage === '노쇼' || c.stage === '면접의사없음') ? '#DC2626'
                : c.stage === '채용후보' ? '#059669'
                : evBg;
@@ -1315,7 +1324,7 @@ function calDayClick(dateStr) {
         <span style="margin-left:8px;font-size:12px;color:#64748B;">${esc(c.jobDuty||'-')}</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        ${c.interviewTime ? `<span style="font-size:13px;color:#2563EB;font-weight:600;">${c.interviewTime}시</span>` : ''}
+        ${c.interviewTime ? `<span style="font-size:13px;color:#2563EB;font-weight:600;">${fmtTime(c.interviewTime)}</span>` : ''}
         <span class="stage-badge ${stageBadge(c.stage, plan)}">${esc(c.stage)}</span>
       </div>
     </div>`).join('');
@@ -1719,9 +1728,15 @@ function openCandidateForm(id) {
               <label class="form-label">면접일시</label>
               <div style="display:flex;gap:6px;">
                 <input class="form-input" type="date" id="f_date" value="${esc(c?.interviewDate||'')}" style="flex:1;">
-                <select class="form-select" id="f_time" style="width:90px;">
+                <select class="form-select" id="f_time" style="width:100px;">
                   <option value="">시간</option>
-                  ${Array.from({length:24},(_,i)=>`<option value="${i+1}" ${c?.interviewTime==i+1?'selected':''}>${i+1}시</option>`).join('')}
+                  ${Array.from({length:48},(_,i)=>{
+                    const h = Math.floor(i/2);
+                    const m = i%2===0 ? '00' : '30';
+                    const val = `${String(h).padStart(2,'0')}:${m}`;
+                    const cur = fmtTime(c?.interviewTime||'');
+                    return `<option value="${val}" ${cur===val?'selected':''}>${val}</option>`;
+                  }).join('')}
                 </select>
               </div>
             </div>
