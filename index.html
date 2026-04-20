@@ -1005,7 +1005,12 @@ function dutyBadgeHtml(duty) {
   if (duty.startsWith('경기')) cls = 'duty-gg';
   else if (duty.startsWith('인천')) cls = 'duty-ic';
   else if (duty.startsWith('서울')) cls = 'duty-sl';
-  return `<span class="duty-badge ${cls}">${esc(duty)}</span>`;
+  const plan = activePlan();
+  const desc = plan?.jobDutyDescs?.[duty] || '';
+  const tooltip = desc
+    ? `onclick="toggleDutyTooltip(event,'${esc(duty)}','${desc.replace(/'/g,"\\'")}')" style="cursor:pointer;"`
+    : '';
+  return `<span class="duty-badge ${cls}" ${tooltip}>${esc(duty)}</span>`;
 }
 
 // ─────────────────────────────────────────────
