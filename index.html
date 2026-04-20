@@ -1299,7 +1299,7 @@ function renderCalendar() {
       if (c.jobDuty) parts.push(esc(c.jobDuty));
       if (c.interviewTime) parts.push(fmtTime(c.interviewTime));
       const bg = (c.stage === '노쇼' || c.stage === '면접의사없음' || c.stage === '불합격') ? '#DC2626'
-               : c.stage === '채용후보' ? '#059669'
+               : (c.stage === '채용후보' || c.stage === '채용완료') ? '#059669'
                : evBg;
       return `<div class="cal-event" style="background:${bg};">${parts.join(' / ')}</div>`;
     }).join('') + (events.length > 5 ? `<div style="font-size:10px;color:${evColor};">+${events.length-5}명</div>` : '');
