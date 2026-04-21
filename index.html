@@ -717,6 +717,7 @@ tbody tr:hover td { background: rgba(0,122,255,0.03); }
               <div class="panel-header">
                 <div class="filters">
                   <select class="filter-select" id="filterDept"  onchange="applyFilter()"><option value="">전체 부서</option></select>
+                  <select class="filter-select" id="filterDuty"  onchange="applyFilter()"><option value="">전체 담당업무</option></select>
                   <select class="filter-select" id="filterStage" onchange="applyFilter()"><option value="">전체 단계</option></select>
                   <div class="search-wrapper">
                     <span class="search-icon">🔍</span>
@@ -1059,7 +1060,7 @@ function renderSidebar() {
 // ─────────────────────────────────────────────
 function selectPlan(id) {
   state.activePlanId = id;
-  state.filter = { dept: '', stage: '', search: '' };
+  state.filter = { dept: '', duty: '', stage: '', search: '' };
   saveState();
   renderAll();
 }
@@ -1097,12 +1098,15 @@ function renderPlanContent() {
 // ─────────────────────────────────────────────
 function renderFilters() {
   const plan = activePlan(); if (!plan) return;
-  const dSel = document.getElementById('filterDept');
-  const sSel = document.getElementById('filterStage');
-  const prevD = dSel.value, prevS = sSel.value;
+  const dSel  = document.getElementById('filterDept');
+  const duSel = document.getElementById('filterDuty');
+  const sSel  = document.getElementById('filterStage');
+  const prevD = dSel.value, prevDu = duSel.value, prevS = sSel.value;
 
   dSel.innerHTML = '<option value="">전체 부서</option>' +
     plan.departments.map(d => `<option value="${esc(d)}" ${prevD===d?'selected':''}>${esc(d)}</option>`).join('');
+  duSel.innerHTML = '<option value="">전체 담당업무</option>' +
+    plan.jobDuties.map(d => `<option value="${esc(d)}" ${prevDu===d?'selected':''}>${esc(d)}</option>`).join('');
   sSel.innerHTML = '<option value="">전체 단계</option>' +
     plan.stages.map(s => `<option value="${esc(s)}" ${prevS===s?'selected':''}>${esc(s)}</option>`).join('');
 
@@ -1116,9 +1120,10 @@ function renderFilters() {
 // ─────────────────────────────────────────────
 function filteredCandidates() {
   const plan = activePlan(); if (!plan) return [];
-  const { dept, stage, search } = state.filter;
+  const { dept, duty, stage, search } = state.filter;
   return plan.candidates.filter(c => {
     if (dept   && c.department !== dept)    return false;
+    if (duty   && c.jobDuty !== duty)        return false;
     if (stage  && c.stage !== stage)         return false;
     if (search) {
       const nameMatch  = c.name.includes(search);
@@ -1477,6 +1482,7 @@ document.addEventListener('click', e => {
 
 function applyFilter() {
   state.filter.dept   = document.getElementById('filterDept').value;
+  state.filter.duty   = document.getElementById('filterDuty').value;
   state.filter.stage  = document.getElementById('filterStage').value;
   state.filter.search = document.getElementById('searchInput').value.trim();
   renderTable();
