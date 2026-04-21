@@ -2142,6 +2142,14 @@ function confirmEditSettingsItem(sid, i, oldName) {
   if (oldName !== newName) {
     plan[sec.descKey][newName] = plan[sec.descKey][oldName] || '';
     delete plan[sec.descKey][oldName];
+
+    // 지원자 데이터 일괄 연동
+    (plan.candidates || []).forEach(c => {
+      if (sid === 'duty'  && c.jobDuty    === oldName) c.jobDuty    = newName;
+      if (sid === 'dept'  && c.department === oldName) c.department = newName;
+      if (sid === 'stage' && c.stage      === oldName) c.stage      = newName;
+    });
+
     // 단계명 변경 시 색상 키도 이전
     if (sid === 'stage' && plan.stageColors) {
       plan.stageColors[newName] = plan.stageColors[oldName];
@@ -2150,7 +2158,7 @@ function confirmEditSettingsItem(sid, i, oldName) {
   }
   if (newDesc) plan[sec.descKey][newName] = newDesc;
   else delete plan[sec.descKey][newName];
-  saveDb(); renderFilters(); renderSettings();
+  saveDb(); renderAll();
 }
 
 // Settings helpers — remove with desc map cleanup
