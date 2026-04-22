@@ -1432,10 +1432,11 @@ function renderStats() {
     else if (!hasAny)                          rowBg = '#FEF2F2'; // 빨간색
     const rowStyle = rowBg ? ` style="background:${rowBg};"` : '';
     const dutyDesc = (plan.jobDutyDescs || {})[d] || '';
-    const dutyCell = dutyDesc
-      ? `<td class="duty-cell"
-           onclick="toggleDutyTooltip(event,'${d.replace(/'/g,"\\'")}','${dutyDesc.replace(/'/g,"\\'")}')">${esc(d)}</td>`
-      : `<td>${esc(d)}</td>`;
+    const dutyCell = `<td class="${dutyDesc ? 'duty-cell' : ''}"
+        ${dutyDesc ? `onclick="toggleDutyTooltip(event,'${d.replace(/'/g,"\\'")}','${dutyDesc.replace(/'/g,"\\'")}')"` : ''}>
+        <span style="font-weight:600;">${esc(d)}</span>
+        ${dutyDesc ? `<br><span style="font-size:11px;color:var(--text-tertiary);font-weight:400;">${esc(dutyDesc)}</span>` : ''}
+      </td>`;
     html += `<tr${rowStyle}>
       ${dutyCell}
       ${stages.map(s => {
