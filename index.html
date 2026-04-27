@@ -1361,6 +1361,14 @@ function toggleStatsSort(stage) {
   renderStats();
 }
 
+// 통계 헤더 클릭 이벤트 위임
+document.addEventListener('click', e => {
+  const th = e.target.closest('.stats-sort-th');
+  if (!th) return;
+  const stage = th.dataset.stage;
+  if (stage) toggleStatsSort(stage);
+});
+
 function renderStats() {
   const plan = activePlan(); if (!plan) return;
   const el = document.getElementById('statsContent'); if (!el) return;
@@ -1426,11 +1434,9 @@ function renderStats() {
         <th>담당업무</th>
         ${stages.map(s => {
           const isActive = _statsSortStage === s;
-          const arrow = isActive ? ' ▲' : '';
-          return `<th style="cursor:pointer;user-select:none;${isActive?'color:var(--apple-blue);':''}"
-            onclick="toggleStatsSort('${s.replace(/'/g,"\\'")}')">
+          return `<th class="stats-sort-th" data-stage="${esc(s)}" style="cursor:pointer;user-select:none;">
             <span class="stage-badge ${stageBadge(s, plan)}">${esc(s)}</span>
-            <span style="font-size:10px;margin-left:3px;">${arrow}</span>
+            ${isActive ? `<span style="font-size:10px;margin-left:3px;color:var(--apple-blue);">▲</span>` : ''}
           </th>`;
         }).join('')}
       </tr>
