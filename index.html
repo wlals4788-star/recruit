@@ -1354,6 +1354,13 @@ function calDayClick(dateStr) {
 // ─────────────────────────────────────────────
 // STATS
 // ─────────────────────────────────────────────
+let _statsSortStage = null;
+
+function toggleStatsSort(stage) {
+  _statsSortStage = (_statsSortStage === stage) ? null : stage;
+  renderStats();
+}
+
 function renderStats() {
   const plan = activePlan(); if (!plan) return;
   const el = document.getElementById('statsContent'); if (!el) return;
@@ -1407,11 +1414,25 @@ function renderStats() {
   const stageColors = {};
   stages.forEach(s => { stageColors[s] = BADGE_COLOR[stageBadge(s, plan)] || '#1E293B'; });
 
+  // 정렬 적용
+  const sortedDuties = [...duties];
+  if (_statsSortStage) {
+    sortedDuties.sort((a, b) => (matrix[a][_statsSortStage]||0) - (matrix[b][_statsSortStage]||0));
+  }
+
   let html = `<table class="stats-table">
     <thead>
       <tr>
         <th>담당업무</th>
-        ${stages.map(s => `<th><span class="stage-badge ${stageBadge(s, plan)}">${esc(s)}</span></th>`).join('')}
+        ${stages.map(s => {
+          const isActive = _statsSortStage === s;
+          const arrow = isActive ? ' ▲' : '';
+          return `<th style="cursor:pointer;user-select:none;${isActive?'color:var(--apple-blue);':''}"
+            onclick="toggleStatsSort('${s.replace(/'/g,"\\'")}')">
+            <span class="stage-badge ${stageBadge(s, plan)}">${esc(s)}</span>
+            <span style="font-size:10px;margin-left:3px;">${arrow}</span>
+          </th>`;
+        }).join('')}
       </tr>
       <tr class="stats-total">
         <td>합계</td>
@@ -1424,7 +1445,7 @@ function renderStats() {
     </thead><tbody>`;
 
   const KEY_STAGES = ['대기중','문자완료','면접예정','채용후보','채용완료'];
-  duties.forEach(d => {
+  sortedDuties.forEach(d => {
     const hasAny = KEY_STAGES.some(s => (matrix[d][s]||0) >= 1);
     let rowBg = '';
     if ((matrix[d]['채용완료']||0) >= 1)      rowBg = '#EFF6FF'; // 파란색
