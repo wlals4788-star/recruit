@@ -1425,7 +1425,7 @@ function renderStats() {
   // 정렬 적용
   const sortedDuties = [...duties];
   if (_statsSortStage) {
-    sortedDuties.sort((a, b) => (matrix[a][_statsSortStage]||0) - (matrix[b][_statsSortStage]||0));
+    sortedDuties.sort((a, b) => (matrix[b][_statsSortStage]||0) - (matrix[a][_statsSortStage]||0));
   }
 
   let html = `<table class="stats-table">
@@ -1436,7 +1436,7 @@ function renderStats() {
           const isActive = _statsSortStage === s;
           return `<th class="stats-sort-th" data-stage="${esc(s)}" style="cursor:pointer;user-select:none;">
             <span class="stage-badge ${stageBadge(s, plan)}">${esc(s)}</span>
-            ${isActive ? `<span style="font-size:10px;margin-left:3px;color:var(--apple-blue);">▲</span>` : ''}
+            ${isActive ? `<span style="font-size:10px;margin-left:3px;color:var(--apple-blue);">▼</span>` : ''}
           </th>`;
         }).join('')}
       </tr>
