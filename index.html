@@ -731,12 +731,12 @@ tbody tr:hover td { background: rgba(0,122,255,0.03); }
                   <thead>
                     <tr>
                       <th style="width:40px;text-align:center;">No.</th>
+                      <th>등록일</th>
                       <th>이름</th>
                       <th>지원 부서</th>
                       <th>담당업무</th>
                       <th>면접 단계</th>
                       <th>면접일시</th>
-                      <th>등록일</th>
                       <th></th>
                     </tr>
                   </thead>
@@ -1168,6 +1168,7 @@ function renderTable() {
   tbody.innerHTML = list.map((c, i) => `
     <tr>
       <td style="text-align:center;color:#94A3B8;font-size:12px;">${i + 1}</td>
+      <td style="font-size:12px;color:var(--text-tertiary);white-space:nowrap;">${c.registeredAt ? fmtDate(c.registeredAt) : '<span style="color:var(--text-tertiary);font-style:italic;">-</span>'}</td>
       <td>
         <strong style="cursor:pointer;color:var(--apple-blue);" onclick="${state.isAdmin ? `openCandidateForm('${c.id}')` : `openViewModal('${c.id}')`}">${esc(c.name)}</strong>
         ${c.phone ? `<span style="margin-left:8px;font-size:12px;color:#94A3B8;">${esc(c.phone)}</span>` : ''}
@@ -1178,7 +1179,6 @@ function renderTable() {
         <span class="stage-badge ${stageBadge(c.stage)} clickable" onclick="toggleStageDropdown('${c.id}',event)">${esc(c.stage)} ▾</span>
       </td>
       <td>${fmtDateTime(c.interviewDate, c.interviewTime)}</td>
-      <td style="font-size:12px;color:var(--text-tertiary);white-space:nowrap;">${c.registeredAt ? fmtDate(c.registeredAt) : '<span style="color:var(--text-tertiary);font-style:italic;">-</span>'}</td>
       <td>
         <div class="td-actions">
           <button class="btn btn-secondary btn-sm" onclick="${state.isAdmin ? `openCandidateForm('${c.id}')` : `openViewModal('${c.id}')`}">보기</button>
