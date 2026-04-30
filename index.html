@@ -736,6 +736,7 @@ tbody tr:hover td { background: rgba(0,122,255,0.03); }
                       <th>담당업무</th>
                       <th>면접 단계</th>
                       <th>면접일시</th>
+                      <th>등록일</th>
                       <th></th>
                     </tr>
                   </thead>
@@ -843,7 +844,11 @@ function loadDb(inject) {
         p.stageColors['면접예정'] = p.stageColors['면졉예정'];
         delete p.stageColors['면졉예정'];
       }
-      (p.candidates || []).forEach(c => { if (c.stage === '면졉예정') c.stage = '면접예정'; });
+      (p.candidates || []).forEach(c => {
+        if (c.stage === '면졉예정') c.stage = '면접예정';
+        // 기존 지원자 등록일 없으면 채용계획 시작일로 채움
+        if (!c.registeredAt) c.registeredAt = p.startDate || '';
+      });
       // 기존 계획에 stageColors 없으면 자동 생성
       if (!p.stageColors) {
         p.stageColors = {};
@@ -1164,6 +1169,7 @@ function renderTable() {
         <span class="stage-badge ${stageBadge(c.stage)} clickable" onclick="toggleStageDropdown('${c.id}',event)">${esc(c.stage)} ▾</span>
       </td>
       <td>${fmtDateTime(c.interviewDate, c.interviewTime)}</td>
+      <td style="font-size:12px;color:var(--text-tertiary);white-space:nowrap;">${c.registeredAt ? fmtDate(c.registeredAt) : '<span style="color:var(--text-tertiary);font-style:italic;">-</span>'}</td>
       <td>
         <div class="td-actions">
           <button class="btn btn-secondary btn-sm" onclick="${state.isAdmin ? `openCandidateForm('${c.id}')` : `openViewModal('${c.id}')`}">보기</button>
@@ -1666,6 +1672,7 @@ function openViewModal(id) {
             <span class="info-value"><span class="stage-badge ${stageBadge(c.stage)}">${esc(c.stage)}</span></span>
           </div>
           <div class="info-row"><span class="info-label">면접일시</span><span class="info-value">${fmtDateTime(c.interviewDate, c.interviewTime)}</span></div>
+          <div class="info-row"><span class="info-label">등록일</span><span class="info-value">${c.registeredAt ? fmtDate(c.registeredAt) : '<span class="info-empty">-</span>'}</span></div>
           <div class="info-row">
             <span class="info-label">메모</span>
             <span class="info-value" style="white-space:pre-wrap">${c.memo ? esc(c.memo) : '<span class="info-empty">없음</span>'}</span>
@@ -1968,7 +1975,7 @@ function saveCandidate(id) {
       alert(`이미 등록된 지원자입니다.\n이름: ${dup.name} / 연락처: ${dup.phone}`);
       return;
     }
-    plan.candidates.push({ id: uid(), name, gender, age, phone, address: addr, department: dept, jobDuty: duty, stage: finalStage, interviewDate: date, interviewTime: time, memo, interviewContent });
+    plan.candidates.push({ id: uid(), name, gender, age, phone, address: addr, department: dept, jobDuty: duty, stage: finalStage, interviewDate: date, interviewTime: time, memo, interviewContent, registeredAt: new Date().toISOString().slice(0,10) });
   }
   saveDb(); closeModal(); renderAll();
 }
@@ -2257,7 +2264,8 @@ async function handlePdfFiles(files) {
         stage:            plan.stages[0] || '',
         interviewDate:    '',
         memo:             '',
-        interviewContent: {}
+        interviewContent: {},
+        registeredAt:     new Date().toISOString().slice(0,10)
       });
       successCount++;
     } catch(e) {
