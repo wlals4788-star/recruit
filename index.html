@@ -1106,7 +1106,11 @@ function renderFilters() {
   dSel.innerHTML = '<option value="">전체 부서</option>' +
     plan.departments.map(d => `<option value="${esc(d)}" ${prevD===d?'selected':''}>${esc(d)}</option>`).join('');
   duSel.innerHTML = '<option value="">전체 담당업무</option>' +
-    plan.jobDuties.map(d => `<option value="${esc(d)}" ${prevDu===d?'selected':''}>${esc(d)}</option>`).join('');
+    plan.jobDuties.map(d => {
+      const desc = (plan.jobDutyDescs || {})[d] || '';
+      const label = desc ? `${d} / ${desc}` : d;
+      return `<option value="${esc(d)}" ${prevDu===d?'selected':''}>${esc(label)}</option>`;
+    }).join('');
   sSel.innerHTML = '<option value="">전체 단계</option>' +
     plan.stages.map(s => `<option value="${esc(s)}" ${prevS===s?'selected':''}>${esc(s)}</option>`).join('');
 
