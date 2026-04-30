@@ -846,8 +846,17 @@ function loadDb(inject) {
       }
       (p.candidates || []).forEach(c => {
         if (c.stage === '면졉예정') c.stage = '면접예정';
-        // 기존 지원자 등록일 없으면 채용계획 시작일로 채움
-        if (!c.registeredAt) c.registeredAt = p.startDate || '';
+        // 기존 지원자 등록일 없으면 ID에서 타임스탬프 복원
+        if (!c.registeredAt && c.id) {
+          try {
+            const tsStr = c.id.slice(0, 8); // 앞 8자리가 Date.now().toString(36)
+            const ts = parseInt(tsStr, 36);
+            if (ts > 1000000000000) { // 유효한 ms 타임스탬프인지 확인
+              c.registeredAt = new Date(ts).toISOString().slice(0, 10);
+            }
+          } catch(e) {}
+          if (!c.registeredAt) c.registeredAt = p.startDate || '';
+        }
       });
       // 기존 계획에 stageColors 없으면 자동 생성
       if (!p.stageColors) {
