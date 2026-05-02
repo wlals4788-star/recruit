@@ -1475,6 +1475,7 @@ function renderStats() {
     let rowBg = '';
     if ((matrix[d]['채용완료']||0) >= 1)      rowBg = '#EFF6FF'; // 파란색
     else if ((matrix[d]['채용후보']||0) >= 1)  rowBg = '#F0FDF4'; // 녹색
+    else if ((matrix[d]['면접예정']||0) >= 1)  rowBg = '#FFFBEB'; // 노란색
     else if (!hasAny)                          rowBg = '#FEF2F2'; // 빨간색
     const rowStyle = rowBg ? ` style="background:${rowBg};"` : '';
     const dutyDesc = (plan.jobDutyDescs || {})[d] || '';
