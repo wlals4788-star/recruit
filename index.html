@@ -312,6 +312,8 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .stats-table tbody td:first-child { text-align:center; font-weight:600; color:var(--text-primary); }
 .stats-cell { font-weight:700; color:var(--apple-blue); }
 .stats-cell.zero { color:var(--text-tertiary); font-weight:400; }
+.stats-cell.clickable { cursor:pointer; transition:background 0.12s; }
+.stats-cell.clickable:hover { background:rgba(0,122,255,0.07); border-radius:6px; }
 
 .duty-cell { cursor:pointer; position:relative; white-space:nowrap; }
 .duty-cell:hover { color:var(--apple-blue); }
@@ -1463,8 +1465,9 @@ function renderStats() {
         <td>합계</td>
         ${stages.map(s => {
           const v = stageTotal[s]||0;
-          const style = v > 0 ? ` style="color:${stageColors[s]};font-weight:700"` : '';
-          return `<td class="stats-cell"${style}>${v}</td>`;
+          const colorStyle = v > 0 ? `color:${stageColors[s]};font-weight:700;` : '';
+          const clickable = v > 0 ? ` clickable" onclick="openStatsDetail(null,'${s.replace(/'/g,"\\'")}')` : '';
+          return `<td class="stats-cell${clickable}" style="${colorStyle}${v>0?'cursor:pointer;':''}">${v}</td>`;
         }).join('')}
       </tr>
     </thead><tbody>`;
@@ -1488,8 +1491,11 @@ function renderStats() {
       ${dutyCell}
       ${stages.map(s => {
         const v = matrix[d][s]||0;
-        const style = v > 0 ? ` style="color:${stageColors[s]};font-weight:700"` : '';
-        return `<td class="stats-cell ${v===0?'zero':''}"${style}>${v}</td>`;
+        const colorStyle = v > 0 ? `color:${stageColors[s]};font-weight:700;` : '';
+        const dEnc = d.replace(/'/g,"\\'");
+        const sEnc = s.replace(/'/g,"\\'");
+        const clickable = v > 0 ? ` clickable" onclick="openStatsDetail('${dEnc}','${sEnc}')` : '';
+        return `<td class="stats-cell ${v===0?'zero':''}${clickable}" style="${colorStyle}${v>0?'cursor:pointer;':''}">${v}</td>`;
       }).join('')}
     </tr>`;
   });
@@ -1497,6 +1503,74 @@ function renderStats() {
   html += `</tbody></table>`;
 
   el.innerHTML = html;
+}
+
+// ─── 통계 셀 클릭 → 지원자 명단 모달 ───
+function openStatsDetail(duty, stage) {
+  const plan = activePlan(); if (!plan) return;
+  let list = (plan.candidates || []).filter(c => c.stage === stage);
+  if (duty) list = list.filter(c => c.jobDuty === duty);
+  list = list.slice().sort((a, b) => {
+    if (a.interviewDate && b.interviewDate) return a.interviewDate.localeCompare(b.interviewDate);
+    if (a.interviewDate) return -1;
+    if (b.interviewDate) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  const title = (duty ? `${duty} · ` : '전체 · ') + stage;
+
+  if (!list.length) {
+    showModal(`<div class="modal-overlay" onclick="bgClose(event)">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">👥 ${esc(title)}</span>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body"><p style="text-align:center;color:var(--text-tertiary);padding:24px 0;">해당 지원자가 없습니다.</p></div>
+        <div class="modal-footer"><button class="btn btn-primary" onclick="closeModal()">닫기</button></div>
+      </div>
+    </div>`);
+    return;
+  }
+
+  const rows = list.map((c, i) => `
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:10px 12px;text-align:center;color:#94A3B8;font-size:12px;">${i+1}</td>
+      <td style="padding:10px 12px;">
+        <strong style="cursor:pointer;color:var(--apple-blue);"
+          onclick="closeModal();setTimeout(()=>openViewModal('${c.id}'),120)">${esc(c.name)}</strong>
+        ${c.phone ? `<span style="margin-left:8px;font-size:12px;color:#94A3B8;">${esc(c.phone)}</span>` : ''}
+      </td>
+      <td style="padding:10px 12px;">${deptBadgeHtml(c.department)}</td>
+      <td style="padding:10px 12px;">${dutyBadgeHtml(c.jobDuty)}</td>
+      <td style="padding:10px 12px;font-size:13px;color:var(--text-secondary);">${fmtDateTime(c.interviewDate, c.interviewTime) || '<span style="color:var(--text-tertiary)">-</span>'}</td>
+      <td style="padding:10px 12px;font-size:12px;color:var(--text-tertiary);white-space:nowrap;">${c.registeredAt ? fmtDate(c.registeredAt) : '-'}</td>
+    </tr>`).join('');
+
+  showModal(`<div class="modal-overlay" onclick="bgClose(event)">
+    <div class="modal" style="max-width:740px;width:95%;">
+      <div class="modal-header">
+        <span class="modal-title">👥 ${esc(title)}&nbsp;<span style="font-size:13px;font-weight:400;color:var(--text-tertiary);">${list.length}명</span></span>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:0;max-height:62vh;overflow-y:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead style="position:sticky;top:0;z-index:1;background:rgba(248,248,250,0.97);">
+            <tr style="border-bottom:1.5px solid var(--border);">
+              <th style="padding:10px 12px;text-align:center;color:var(--text-tertiary);font-size:11px;font-weight:700;width:36px;">No.</th>
+              <th style="padding:10px 12px;color:var(--text-tertiary);font-size:11px;font-weight:700;">이름 / 연락처</th>
+              <th style="padding:10px 12px;color:var(--text-tertiary);font-size:11px;font-weight:700;">지원부서</th>
+              <th style="padding:10px 12px;color:var(--text-tertiary);font-size:11px;font-weight:700;">담당업무</th>
+              <th style="padding:10px 12px;color:var(--text-tertiary);font-size:11px;font-weight:700;">면접일시</th>
+              <th style="padding:10px 12px;color:var(--text-tertiary);font-size:11px;font-weight:700;">등록일</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="modal-footer"><button class="btn btn-primary" onclick="closeModal()">닫기</button></div>
+    </div>
+  </div>`);
 }
 
 // ─── 담당업무 툴팁 ───
