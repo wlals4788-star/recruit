@@ -628,6 +628,35 @@ tbody tr:hover td { background: rgba(0,122,255,0.03); }
 }
 .settings-item-del:hover { color: var(--apple-red); background: rgba(255,59,48,0.08); }
 
+/* 처리상태 드래그&색상 */
+.drag-handle {
+  cursor: grab; color: var(--text-tertiary); font-size: 18px; padding: 0 8px 0 0;
+  line-height: 1; user-select: none; flex-shrink: 0;
+}
+.drag-handle:active { cursor: grabbing; }
+.stage-color-dot {
+  width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
+  cursor: pointer; border: 2px solid rgba(0,0,0,0.1);
+  margin-right: 10px; transition: transform 0.12s, box-shadow 0.12s;
+}
+.stage-color-dot:hover { transform: scale(1.25); box-shadow: 0 0 0 3px rgba(0,122,255,0.2); }
+.stage-color-palette {
+  display: none; flex-wrap: wrap; gap: 7px;
+  padding: 10px 14px 12px; background: rgba(248,250,252,0.98);
+  border: 1px solid var(--border); border-radius: 10px;
+  margin-top: 3px; box-shadow: var(--shadow-md);
+}
+.stage-color-palette.open { display: flex; }
+.color-swatch {
+  width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
+  border: 2px solid transparent; transition: transform 0.12s, border-color 0.12s;
+  flex-shrink: 0;
+}
+.color-swatch:hover { transform: scale(1.2); }
+.color-swatch.selected { border-color: #1D1D1F; transform: scale(1.15); }
+.settings-list-item.drag-over { border-top: 2.5px solid var(--apple-blue); background: rgba(0,122,255,0.04); }
+.settings-list-item.dragging { opacity: 0.4; }
+
 .settings-add-row {
   display: flex; gap: 6px; align-items: center;
   padding: 8px 10px; border-radius: var(--radius-md);
@@ -784,6 +813,18 @@ const STORAGE_KEY = 'recruitApp_v2';
 
 const STAGE_PALETTE = ['badge-blue','badge-indigo','badge-purple','badge-green','badge-red','badge-orange','badge-yellow','badge-gray'];
 
+const BADGE_SWATCHES = [
+  { cls: 'badge-blue',   dot: '#007AFF', label: '파랑'  },
+  { cls: 'badge-indigo', dot: '#5856D6', label: '인디고' },
+  { cls: 'badge-purple', dot: '#AF52DE', label: '보라'  },
+  { cls: 'badge-green',  dot: '#34C759', label: '초록'  },
+  { cls: 'badge-red',    dot: '#FF3B30', label: '빨강'  },
+  { cls: 'badge-orange', dot: '#FF9500', label: '주황'  },
+  { cls: 'badge-yellow', dot: '#FFCC00', label: '노랑'  },
+  { cls: 'badge-gray',   dot: '#8E8E93', label: '회색'  },
+];
+const BADGE_DOT_COLORS = Object.fromEntries(BADGE_SWATCHES.map(s => [s.cls, s.dot]));
+
 // 특정 단계명에 고정 색상 지정
 const STAGE_FIXED_COLORS = {
   '대기중':       'badge-gray',
@@ -867,10 +908,8 @@ function loadDb(inject) {
         p.stageColors = {};
         (p.stages || []).forEach((s, i) => { p.stageColors[s] = STAGE_PALETTE[i % STAGE_PALETTE.length]; });
       }
-      // 고정 색상 강제 적용 (노쇼 → 빨간색 등)
-      Object.entries(STAGE_FIXED_COLORS).forEach(([stage, color]) => {
-        if ((p.stages || []).includes(stage)) p.stageColors[stage] = color;
-      });
+      // 색상 없는 단계만 기본값 보충 (사용자 지정 색상은 유지)
+      (p.stages || []).forEach(s => { if (!p.stageColors[s]) assignStageColor(p, s); });
       // 단계 순서 재배열: 면접예정 오른쪽에 면접의사없음 → 노쇼 순으로 위치
       (() => {
         const stages = p.stages || [];
@@ -2116,6 +2155,60 @@ function confirmDelete(id) {
 }
 
 // ─────────────────────────────────────────────
+// 처리상태 드래그&드롭 순서 변경
+// ─────────────────────────────────────────────
+let _dragStageSrc = null;
+
+function stageDragStart(e, i) {
+  _dragStageSrc = i;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => e.currentTarget.classList.add('dragging'), 0);
+}
+function stageDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.settings-list-item').forEach(el => el.classList.remove('drag-over'));
+}
+function stageDragOver(e, i) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.settings-list-item[draggable]').forEach((el, idx) => {
+    el.classList.toggle('drag-over', idx === i && idx !== _dragStageSrc);
+  });
+}
+function stageDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+function stageDrop(e, i) {
+  e.preventDefault();
+  document.querySelectorAll('.settings-list-item').forEach(el => el.classList.remove('drag-over'));
+  const plan = activePlan(); if (!plan) return;
+  if (_dragStageSrc === null || _dragStageSrc === i) { _dragStageSrc = null; return; }
+  const stages = plan.stages;
+  const moved = stages.splice(_dragStageSrc, 1)[0];
+  const insertAt = _dragStageSrc < i ? i - 1 : i;
+  stages.splice(insertAt, 0, moved);
+  _dragStageSrc = null;
+  saveDb(); renderSettings();
+}
+
+// ─────────────────────────────────────────────
+// 처리상태 색상 선택
+// ─────────────────────────────────────────────
+function toggleStageColorPicker(stageName, i) {
+  const pal = document.getElementById(`stageColorPal-${i}`);
+  if (!pal) return;
+  const isOpen = pal.classList.contains('open');
+  document.querySelectorAll('.stage-color-palette').forEach(p => p.classList.remove('open'));
+  if (!isOpen) pal.classList.add('open');
+}
+function setStageColor(stageName, cls) {
+  const plan = activePlan(); if (!plan) return;
+  if (!plan.stageColors) plan.stageColors = {};
+  plan.stageColors[stageName] = cls;
+  saveDb(); renderSettings(); renderAll();
+}
+
+// ─────────────────────────────────────────────
 // MODAL: SETTINGS
 // ─────────────────────────────────────────────
 function openSettings() { renderSettings(); }
@@ -2138,12 +2231,45 @@ function renderSettings() {
     const descMap = plan[descKey] || {};
 
     const listItems = arr.length
-      ? arr.map((v, i) => `
+      ? arr.map((v, i) => {
+          if (sid === 'stage') {
+            const curCls = plan.stageColors?.[v] || 'badge-gray';
+            const dotColor = BADGE_DOT_COLORS[curCls] || '#8E8E93';
+            const swatches = BADGE_SWATCHES.map(sw =>
+              `<span class="color-swatch ${sw.cls === curCls ? 'selected' : ''}"
+                style="background:${sw.dot};"
+                title="${sw.label}"
+                onclick="setStageColor('${v.replace(/'/g,"\\'")}','${sw.cls}')"></span>`
+            ).join('');
+            return `
+              <div>
+                <div class="settings-list-item" id="settingsItem-stage-${i}"
+                  draggable="${state.isAdmin ? 'true' : 'false'}"
+                  ondragstart="stageDragStart(event,${i})"
+                  ondragover="stageDragOver(event,${i})"
+                  ondrop="stageDrop(event,${i})"
+                  ondragend="stageDragEnd(event)"
+                  ondragleave="stageDragLeave(event)">
+                  ${state.isAdmin ? `<span class="drag-handle" title="드래그하여 순서 변경">⠿</span>` : ''}
+                  <span class="stage-color-dot" style="background:${dotColor};"
+                    onclick="event.stopPropagation();toggleStageColorPicker('${v.replace(/'/g,"\\'")}',${i})"
+                    title="색상 변경"></span>
+                  <div style="flex:1;cursor:pointer;" onclick="editSettingsItem('stage',${i})">
+                    <div class="settings-item-title" style="border-right:none;width:auto;padding-right:0;margin-right:0;">${esc(v)}</div>
+                    ${descMap[v] ? `<div class="settings-item-desc" style="margin-top:2px;">${esc(descMap[v])}</div>` : ''}
+                  </div>
+                  ${state.isAdmin ? `<button class="settings-item-del" onclick="event.stopPropagation();rmStage(${i})" title="삭제">✕</button>` : ''}
+                </div>
+                <div id="stageColorPal-${i}" class="stage-color-palette">${swatches}</div>
+              </div>`;
+          }
+          return `
           <div class="settings-list-item" id="settingsItem-${sid}-${i}" onclick="editSettingsItem('${sid}',${i})">
             <div class="settings-item-title">${esc(v)}</div>
             <div class="settings-item-desc">${esc(descMap[v] || '')}</div>
             ${state.isAdmin ? `<button class="settings-item-del" onclick="event.stopPropagation();${rmFn}(${i})" title="삭제">✕</button>` : ''}
-          </div>`).join('')
+          </div>`;
+        }).join('')
       : `<div style="color:#CBD5E1;font-size:13px;padding:6px 2px">항목이 없습니다.</div>`;
 
     const addBtnHtml = state.isAdmin
@@ -2341,7 +2467,19 @@ function settingRemove(listKey, descKey, i, label) {
 }
 
 function rmDept(i)  { settingRemove('departments',         'departmentDescs',        i, '부서'); }
-function rmDuty(i)  { settingRemove('jobDuties',           'jobDutyDescs',           i, '담당업무'); }
+function rmDuty(i) {
+  const plan = activePlan(); if (!plan) return;
+  const name = plan.jobDuties[i];
+  if (!confirm(`'${name}' 담당업무을(를) 삭제할까요?\n해당 업무가 배정된 지원자 데이터에서도 제거됩니다.`)) return;
+  plan.jobDuties.splice(i, 1);
+  if (plan.jobDutyDescs) delete plan.jobDutyDescs[name];
+  // 지원자 jobDuties 배열에서도 제거
+  (plan.candidates || []).forEach(c => {
+    if (c.jobDuties) c.jobDuties = c.jobDuties.filter(d => d !== name);
+    if (c.jobDuty === name) c.jobDuty = c.jobDuties?.[0] || '';
+  });
+  saveDb(); renderFilters(); renderSettings(); renderAll();
+}
 function rmSite(i)  { settingRemove('applySites',          'applySiteDescs',         i, '지원사이트'); }
 function rmStage(i) { settingRemove('stages',              'stageDescs',             i, '단계'); }
 function rmIc(i)    { settingRemove('interviewCategories', 'interviewCategoryDescs', i, '분류'); }
