@@ -1524,14 +1524,15 @@ function renderStats() {
       </tr>
     </thead><tbody>`;
 
-  const KEY_STAGES = ['대기중','문자완료','면접예정','채용후보','채용완료'];
+  const KEY_STAGES = ['대기중','문자완료','면접예정','채용후보','교육예정','채용완료'];
   sortedDuties.forEach(d => {
     const hasAny = KEY_STAGES.some(s => (matrix[d][s]||0) >= 1);
     let rowBg = '';
-    if ((matrix[d]['채용완료']||0) >= 1)      rowBg = '#EFF6FF'; // 파란색
-    else if ((matrix[d]['채용후보']||0) >= 1)  rowBg = '#F0FDF4'; // 녹색
-    else if ((matrix[d]['면접예정']||0) >= 1)  rowBg = '#FFFBEB'; // 노란색
-    else if (!hasAny)                          rowBg = '#FEF2F2'; // 빨간색
+    if      ((matrix[d]['채용완료']||0) >= 1) rowBg = '#EFF6FF'; // 파란색  (최우선)
+    else if ((matrix[d]['교육예정']||0) >= 1) rowBg = '#ECFEFF'; // 하늘색
+    else if ((matrix[d]['채용후보']||0) >= 1) rowBg = '#F0FDF4'; // 녹색
+    else if ((matrix[d]['면접예정']||0) >= 1) rowBg = '#FFFBEB'; // 노란색
+    else if (!hasAny)                         rowBg = '#FEF2F2'; // 빨간색  (진행 없음)
     const rowStyle = rowBg ? ` style="background:${rowBg};"` : '';
     const dutyDesc = (plan.jobDutyDescs || {})[d] || '';
     const dutyCell = `<td class="${dutyDesc ? 'duty-cell' : ''}"
